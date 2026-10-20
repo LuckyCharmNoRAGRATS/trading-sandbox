@@ -1,0 +1,256 @@
+2026-10-17 13:47:03 | INFO | Shard ID None has connected to Gateway (Session ID: 3473aa0c1edcd2e3a0312df1393af589).
+2026-10-17 13:52:37 | INFO | AFC is enabled with max remote calls: 10.
+2026-10-17 13:52:38 | INFO | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 404 Not Found"
+2026-10-17 13:55:55 | INFO | Shard ID None has connected to Gateway (Session ID: a59e5ab494b5e8ac73777de9494766dd).
+2026-10-17 13:57:32 | ERROR | Ignoring exception in command None
+discord.ext.commands.errors.CommandNotFound: Command "ai" is not found
+2026-10-17 13:59:43 | INFO | Shard ID None has connected to Gateway (Session ID: fe1b8c6f17eb88fdaaced64cdcda8480).
+2026-10-17 14:08:55 | INFO | Shard ID None has connected to Gateway (Session ID: 8188dc5e34c12536eb43b6d8611af428).
+2026-10-17 14:10:27 | WARNING | Shard ID None heartbeat blocked for more than 10 seconds.
+Loop thread traceback (most recent call last):
+  File "C:\Users\HP\trading-sandbox\main_discord.py", line 32, in <module>
+    bot.run(TOKEN)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\client.py", line 933, in run
+    asyncio.run(runner())
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 205, in run
+    return runner.run(main)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 706, in run_until_complete
+    self.run_forever()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 677, in run_forever
+    self._run_once()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 2056, in _run_once
+    handle._run()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\events.py", line 94, in _run
+    self._context.run(self._callback, *self._args)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\client.py", line 508, in _run_event
+    await coro(*args, **kwargs)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\bot.py", line 1421, in on_message
+    await self.process_commands(message)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\bot.py", line 1418, in process_commands
+    await self.invoke(ctx)  # type: ignore
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\bot.py", line 1376, in invoke
+    await ctx.command.invoke(ctx)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\core.py", line 1064, in invoke
+    await injected(*ctx.args, **ctx.kwargs)  # type: ignore
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "C:\Users\HP\trading-sandbox\cogs\research.py", line 22, in fetch_arxiv
+    response = urllib.request.urlopen(url)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 187, in urlopen
+    return opener.open(url, data, timeout)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 493, in open
+    response = meth(req, response)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 602, in http_response
+    response = self.parent.error(
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 525, in error
+    result = self._call_chain(*args)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 464, in _call_chain
+    result = func(*args)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 718, in http_error_302
+    return self.parent.open(new, timeout=req.timeout)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 487, in open
+    response = self._open(req, data)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 464, in _call_chain
+    result = func(*args)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1369, in https_open
+    return self.do_open(http.client.HTTPSConnection, req,
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1325, in do_open
+    r = h.getresponse()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1459, in getresponse
+    response.begin()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 336, in begin
+    version, status, reason = self._read_status()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 297, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\socket.py", line 729, in readinto
+    return self._sock.recv_into(b)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\ssl.py", line 1304, in recv_into
+    return self.read(nbytes, buffer)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\ssl.py", line 1138, in read
+    return self._sslobj.read(len, buffer)
+
+2026-10-17 14:10:37 | WARNING | Shard ID None heartbeat blocked for more than 20 seconds.
+Loop thread traceback (most recent call last):
+  File "C:\Users\HP\trading-sandbox\main_discord.py", line 32, in <module>
+    bot.run(TOKEN)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\client.py", line 933, in run
+    asyncio.run(runner())
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 205, in run
+    return runner.run(main)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 706, in run_until_complete
+    self.run_forever()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 677, in run_forever
+    self._run_once()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 2056, in _run_once
+    handle._run()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\events.py", line 94, in _run
+    self._context.run(self._callback, *self._args)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\client.py", line 508, in _run_event
+    await coro(*args, **kwargs)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\bot.py", line 1421, in on_message
+    await self.process_commands(message)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\bot.py", line 1418, in process_commands
+    await self.invoke(ctx)  # type: ignore
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\bot.py", line 1376, in invoke
+    await ctx.command.invoke(ctx)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\core.py", line 1064, in invoke
+    await injected(*ctx.args, **ctx.kwargs)  # type: ignore
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "C:\Users\HP\trading-sandbox\cogs\research.py", line 22, in fetch_arxiv
+    response = urllib.request.urlopen(url)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 187, in urlopen
+    return opener.open(url, data, timeout)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 493, in open
+    response = meth(req, response)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 602, in http_response
+    response = self.parent.error(
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 525, in error
+    result = self._call_chain(*args)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 464, in _call_chain
+    result = func(*args)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 718, in http_error_302
+    return self.parent.open(new, timeout=req.timeout)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 487, in open
+    response = self._open(req, data)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 464, in _call_chain
+    result = func(*args)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1369, in https_open
+    return self.do_open(http.client.HTTPSConnection, req,
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1325, in do_open
+    r = h.getresponse()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1459, in getresponse
+    response.begin()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 336, in begin
+    version, status, reason = self._read_status()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 297, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\socket.py", line 729, in readinto
+    return self._sock.recv_into(b)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\ssl.py", line 1304, in recv_into
+    return self.read(nbytes, buffer)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\ssl.py", line 1138, in read
+    return self._sslobj.read(len, buffer)
+
+2026-10-17 14:10:47 | WARNING | Shard ID None heartbeat blocked for more than 30 seconds.
+Loop thread traceback (most recent call last):
+  File "C:\Users\HP\trading-sandbox\main_discord.py", line 32, in <module>
+    bot.run(TOKEN)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\client.py", line 933, in run
+    asyncio.run(runner())
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 205, in run
+    return runner.run(main)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 706, in run_until_complete
+    self.run_forever()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 677, in run_forever
+    self._run_once()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 2056, in _run_once
+    handle._run()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\events.py", line 94, in _run
+    self._context.run(self._callback, *self._args)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\client.py", line 508, in _run_event
+    await coro(*args, **kwargs)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\bot.py", line 1421, in on_message
+    await self.process_commands(message)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\bot.py", line 1418, in process_commands
+    await self.invoke(ctx)  # type: ignore
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\bot.py", line 1376, in invoke
+    await ctx.command.invoke(ctx)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\core.py", line 1064, in invoke
+    await injected(*ctx.args, **ctx.kwargs)  # type: ignore
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\ext\commands\core.py", line 266, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "C:\Users\HP\trading-sandbox\cogs\research.py", line 22, in fetch_arxiv
+    response = urllib.request.urlopen(url)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 187, in urlopen
+    return opener.open(url, data, timeout)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 493, in open
+    response = meth(req, response)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 602, in http_response
+    response = self.parent.error(
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 525, in error
+    result = self._call_chain(*args)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 464, in _call_chain
+    result = func(*args)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 718, in http_error_302
+    return self.parent.open(new, timeout=req.timeout)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 487, in open
+    response = self._open(req, data)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 464, in _call_chain
+    result = func(*args)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1369, in https_open
+    return self.do_open(http.client.HTTPSConnection, req,
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1325, in do_open
+    r = h.getresponse()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1459, in getresponse
+    response.begin()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 336, in begin
+    version, status, reason = self._read_status()
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 297, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\socket.py", line 729, in readinto
+    return self._sock.recv_into(b)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\ssl.py", line 1304, in recv_into
+    return self.read(nbytes, buffer)
+  File "C:\Users\HP\AppData\Local\Python\pythoncore-3.14-64\Lib\ssl.py", line 1138, in read
+    return self._sslobj.read(len, buffer)
+
+2026-10-17 14:10:49 | ERROR | Attempting a reconnect in 1.47s
+Traceback (most recent call last):
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\client.py", line 731, in connect
+    await self.ws.poll_event()
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\gateway.py", line 644, in poll_event
+    await self.received_message(msg.data)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\gateway.py", line 549, in received_message
+    await self.send_as_json(beat)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\gateway.py", line 681, in send_as_json
+    await self.send(utils._to_json(data))
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\discord\gateway.py", line 677, in send
+    await self.socket.send_str(data)
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\aiohttp\client_ws.py", line 289, in send_str
+    await self._writer.send_frame(
+        data.encode("utf-8"), WSMsgType.TEXT, compress=compress
+    )
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\aiohttp\_websocket\writer.py", line 82, in send_frame
+    self._write_websocket_frame(message, opcode, 0)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\trading-sandbox\venv\Lib\site-packages\aiohttp\_websocket\writer.py", line 150, in _write_websocket_frame
+    raise ClientConnectionResetError("Cannot write to closing transport")
+aiohttp.client_exceptions.ClientConnectionResetError: Cannot write to closing transport
+2026-10-17 14:10:51 | INFO | Shard ID None has successfully RESUMED session 8188dc5e34c12536eb43b6d8611af428.
+2026-10-17 14:13:38 | INFO | Shard ID None has connected to Gateway (Session ID: d38bdf3d5625ea4b07c6078dd9264701).
+2026-10-17 14:13:56 | INFO | AFC is enabled with max remote calls: 10.
+2026-10-17 14:13:57 | INFO | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 404 Not Found"
+2026-10-17 14:16:33 | INFO | Shard ID None has connected to Gateway (Session ID: 30c6c3872d63bd0b08a54cd237a214d6).
+2026-10-17 14:17:41 | INFO | AFC is enabled with max remote calls: 10.
+2026-10-17 14:17:42 | INFO | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent "HTTP/1.1 402 Payment Required"
+2026-10-17 14:21:16 | INFO | AFC is enabled with max remote calls: 10.
+2026-10-17 14:21:16 | INFO | HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent "HTTP/1.1 402 Payment Required"
+2026-10-17 14:37:00 | INFO | Shard ID None has connected to Gateway (Session ID: 39123447622d8945e0b2ea9777b4aa32).
+2026-10-17 14:37:32 | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-10-17 14:40:55 | INFO | Shard ID None has connected to Gateway (Session ID: 053bb45d59f34030daef75f94cf90e8e).
+2026-10-17 14:41:26 | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 404 Not Found"
+2026-10-17 14:49:47 | INFO | Shard ID None has connected to Gateway (Session ID: 5674ce1545cbb5777f45c2dfda422d31).
+2026-10-17 15:57:49 | INFO | Shard ID None has connected to Gateway (Session ID: 20e8df8593d90f6bb34f5459f647fb23).
+2026-10-17 15:58:50 | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 404 Not Found"
+2026-10-17 15:59:06 | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 404 Not Found"
+2026-10-17 16:12:01 | INFO | Shard ID None has connected to Gateway (Session ID: 49d030e03c295bbbffe2bd7eb020d4f9).
+2026-10-17 16:12:15 | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-10-17 16:16:06 | INFO | Shard ID None has connected to Gateway (Session ID: 65470aa0dc783091f28395915e067465).
+2026-10-17 16:17:24 | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-10-17 16:22:50 | INFO | Shard ID None has connected to Gateway (Session ID: 1255d3bd06c98a6427f0662205c6a30c).
+2026-10-17 16:25:13 | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 404 Not Found"
+2026-10-17 16:27:11 | INFO | Shard ID None has connected to Gateway (Session ID: 6d52d08800cbcae99fe46db8280afff2).
+2026-10-17 16:28:25 | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"

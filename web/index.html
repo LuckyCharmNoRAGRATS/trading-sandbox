@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>trading-sandbox · Alpaca Live OMS & Quant Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+tailwind.config={theme:{extend:{colors:{ink:'#0b1220',panel:'#111a2b',edge:'#1f2c44',mute:'#8b9ab5',neon:'#39ff88',azure:'#4da3ff',warn:'#ffb347',alert:'#ff5c7a'},
+fontFamily:{sans:['"IBM Plex Sans"','system-ui','sans-serif'],mono:['"IBM Plex Mono"','ui-monospace','monospace']}}}}
+</script>
+<style>
+html,body{background:#0b1220}
+body{background-image:radial-gradient(1200px 500px at 85% -10%,rgba(77,163,255,.10),transparent 60%),radial-gradient(900px 400px at 0% 0%,rgba(57,255,136,.06),transparent 60%);padding-bottom:72px}
+.pulse{animation:pulse 2s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.sw{width:40px;height:22px;border-radius:11px;background:#1f2c44;position:relative;transition:background .2s;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#8b9ab5;transition:transform .2s,background .2s}
+.sw[aria-checked="true"]{background:rgba(57,255,136,.25)}.sw[aria-checked="true"]::after{transform:translateX(18px);background:#39ff88}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #4da3ff;outline-offset:2px}
+.scroll::-webkit-scrollbar{height:6px;width:8px}.scroll::-webkit-scrollbar-thumb{background:#1f2c44;border-radius:4px}
+.excel-table{border-collapse:collapse;width:100%;font-family:'IBM Plex Mono',monospace;font-size:12px}
+.excel-table th{background:#162238;color:#8b9ab5;border:1px solid #1f2c44;padding:6px 10px;text-align:left;font-weight:600;user-select:none;cursor:pointer;white-space:nowrap}
+.excel-table th:hover{background:#1d2d4a;color:#e2e8f0}
+.excel-table td{border:1px solid #1f2c44;padding:5px 10px;white-space:nowrap;background:#0e1626}
+.excel-table tr:hover td{background:#142036}
+.excel-row-num{background:#162238 !important;color:#8b9ab5;text-align:center;width:36px;user-select:none}
+.excel-cell-input{background:transparent;border:none;color:#e2e8f0;width:100%;font-family:'IBM Plex Mono',monospace;font-size:12px}
+.excel-cell-input:focus{outline:1px solid #39ff88;background:#0b1220;padding:2px 4px}
+</style>
+</head>
+<body class="font-sans text-slate-200 min-h-screen antialiased">
+
+<!-- Sticky Top Bar -->
+<header class="border-b border-edge sticky top-0 z-30 bg-ink/95 backdrop-blur">
+  <div class="max-w-7xl mx-auto px-3 sm:px-4 pt-3 flex items-center justify-between gap-2">
+    <div class="flex items-center gap-2">
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-neon pulse"></span>
+      <span class="font-mono text-neon text-xs sm:text-sm font-semibold">~/trading-sandbox</span>
+      <span class="hidden md:inline-block text-xs font-mono text-azure border border-azure/40 px-2 py-0.5 rounded bg-azure/10">Alpaca Paper OMS Sync</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button data-cmd="sync_alpaca" class="font-mono text-xs px-2.5 py-1 rounded border border-azure/50 bg-azure/15 text-azure hover:bg-azure/25">↻ Sync Alpaca</button>
+      <button id="simToggle" class="hidden sm:inline-block font-mono text-xs px-2.5 py-1 rounded border border-neon/50 bg-neon/10 text-neon">● Stream: ON</button>
+      <span id="conn" class="font-mono text-xs px-2 py-1 rounded border border-edge text-mute">connecting…</span>
+      <button id="signout" class="hidden text-xs text-mute hover:text-slate-200">Sign out</button>
+    </div>
+  </div>
+  <nav id="tabs" class="max-w-7xl mx-auto px-3 sm:px-4 mt-2 flex gap-1 overflow-x-auto scroll" aria-label="Sections"></nav>
+</header>
+
+<main id="view" class="max-w-7xl mx-auto px-3 sm:px-4 py-5"></main>
+
+<!-- Mobile Bottom Quick-Action Navigation Bar (Phone Ergonomics) -->
+<nav class="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-panel/95 backdrop-blur border-t border-edge grid grid-cols-4 text-center font-mono text-[11px]">
+  <a href="#overview" class="py-2.5 text-slate-200 hover:text-neon flex flex-col items-center"><span>📈</span><span>Chart/Log</span></a>
+  <a href="#alpaca" class="py-2.5 text-neon font-semibold flex flex-col items-center"><span>⚡</span><span>Alpaca OMS</span></a>
+  <a href="#chan" class="py-2.5 text-slate-200 hover:text-neon flex flex-col items-center"><span>📚</span><span>Chan Hub</span></a>
+  <a href="#history" class="py-2.5 text-slate-200 hover:text-neon flex flex-col items-center"><span>📊</span><span>Excel CSV</span></a>
+</nav>
+
+<div id="toast" class="fixed bottom-16 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 hidden bg-panel border border-neon/60 shadow-2xl rounded px-4 py-2 text-xs sm:text-sm max-w-[92vw] font-mono text-slate-100" role="status"></div>
+
+<!-- Strategy Blueprint Modal -->
+<div id="modal" class="hidden fixed inset-0 z-50 bg-ink/85 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-panel border border-edge rounded-lg p-5 w-full max-w-2xl space-y-4 shadow-2xl">
+    <div class="flex items-center justify-between border-b border-edge pb-3">
+      <h3 id="modalTitle" class="font-mono text-neon font-semibold text-base">Strategy Implementation Spec</h3>
+      <button id="closeModal" class="text-mute hover:text-slate-200 font-mono text-sm">[ESC / Close]</button>
+    </div>
+    <div id="modalBody" class="space-y-3 text-sm"></div>
+  </div>
+</div>
+
+<!-- Supabase Login Modal -->
+<div id="login" class="hidden fixed inset-0 z-50 bg-ink/95 flex items-center justify-center p-4">
+  <form id="lf" class="bg-panel border border-edge rounded-lg p-5 w-full max-w-sm space-y-3">
+    <h1 class="text-lg font-semibold">Sign in to Trading Sandbox</h1>
+    <p class="text-sm text-mute">Authenticate to control your Alpaca Paper account & GCP VM.</p>
+    <input id="em" type="email" required autocomplete="username" placeholder="Email" class="w-full bg-ink border border-edge rounded px-3 py-2 text-sm">
+    <input id="pw" type="password" required autocomplete="current-password" placeholder="Password" class="w-full bg-ink border border-edge rounded px-3 py-2 text-sm">
+    <p id="lerr" class="text-sm text-alert min-h-[1.25rem]"></p>
+    <button class="w-full rounded bg-neon/15 border border-neon/50 text-neon py-2 text-sm hover:bg-neon/25">Sign in</button>
+  </form>
+</div>
+
+<script>
+// 1) Paste your Supabase project URL and public anon key (Project Settings → API). Never put your Alpaca secret key here.
+const CFG={url:"https://YOUR-PROJECT.supabase.co",key:"YOUR_ANON_KEY"};
+const demo=CFG.url.includes("YOUR-PROJECT");
+const $=s=>document.querySelector(s);
+
+const S={
+  kv:{},
+  signals:{},
+  results:[],
+  logs:[],
+  commands:[],
+  chartTicker:'AAPL',
+  simActive:true,
+  sheetFilter:'',
+  sheetStrategy:'ALL',
+  sheetSortCol:'ts',
+  sheetSortAsc:false,
+  chanFilter:'ALL',
+  orderTicket:{symbol:'AAPL',side:'BUY',order_type:'MARKET',qty:0,entry_price:319.58,stop_loss:313.19,strategy:'Bollinger Mean Reversion'},
+  ticks:{AAPL:[],SPY:[],GLD_GDX:[]},
+  trades:[],
+  chanFeed:[]
+};
+
+function initSeedData(){
+  S.kv={
+    account:{status:'ACTIVE',buying_power:400009.00,equity:401851.50,daily_pnl:1842.50,daily_pnl_pct:0.46,kelly_leverage:1.35},
+    node:{status:'Online',host:'GCP e2-micro · tmux (tradingbot)'},
+    discord:{online:true,last_event:'Connected to Gateway · #system-status'},
+    risk:{max_risk_per_trade:0.01,max_position_pct:0.05,max_daily_drawdown:0.03,bb_window:20,z_entry_threshold:2.0,stop_loss_pct:0.02,ai_confidence_min:0.60,poll_seconds:30},
+    alpaca_positions:{
+      positions:[
+        {symbol:'AAPL',qty:125,side:'long',avg_entry_price:317.40,current_price:319.58,market_value:39947.50,unrealized_pl:272.50,unrealized_plpc:0.69},
+        {symbol:'SPY',qty:40,side:'long',avg_entry_price:499.10,current_price:502.15,market_value:20086.00,unrealized_pl:122.00,unrealized_plpc:0.61}
+      ]
+    },
+    alpaca_orders:{
+      orders:[
+        {id:'9041a8f2',full_id:'9041a8f2-alpaca',symbol:'AAPL',side:'BUY',qty:125,filled_avg_price:317.40,status:'FILLED',type:'MARKET',created_at:new Date(Date.now()-1800000).toISOString()},
+        {id:'9040b3c1',full_id:'9040b3c1-alpaca',symbol:'SPY',side:'BUY',qty:40,filled_avg_price:499.10,status:'FILLED',type:'MARKET',created_at:new Date(Date.now()-5400000).toISOString()}
+      ]
+    }
+  };
+
+  S.signals={
+    AAPL:{ticker:'AAPL',strategy:'Bollinger Mean Reversion (20d, 2.0σ)',status:'NO SIGNAL',enabled:true,metrics:{close:319.58,sma:316.40,upper_band:321.10,lower_band:311.70,z_score:2.031,hurst:0.442}},
+    SPY:{ticker:'SPY',strategy:'SMA 20/50 Crossover + ML Meta-Label',status:'WATCHING',enabled:true,metrics:{close:502.15,sma:501.80,meta_confidence:0.64,hurst:0.465}},
+    'GLD/GDX':{ticker:'GLD/GDX',strategy:'Engle-Granger Cointegrated Pairs (Chan Ch.7)',status:'ACTIVE',enabled:true,metrics:{spread_z:-2.14,hedge_ratio:1.632,ou_half_life:10.2,adf_pvalue:0.012}}
+  };
+
+  const now = Math.floor(Date.now()/1000) - (120 * 60);
+  let pA = 318.20, pS = 500.50, pG = 1.45;
+  for(let i=0;i<120;i++){
+    const t = now + i*60;
+    pA += (Math.random()-0.492)*0.45;
+    pS += (Math.random()-0.495)*0.55;
+    pG += (Math.random()-0.50)*0.08;
+    S.ticks.AAPL.push({time:t, value:Number(pA.toFixed(2))});
+    S.ticks.SPY.push({time:t, value:Number(pS.toFixed(2))});
+    S.ticks.GLD_GDX.push({time:t, value:Number(pG.toFixed(3))});
+  }
+
+  S.logs=[
+    {ts:new Date(Date.now()-300000).toISOString(),level:'INFO',source:'bot',msg:'Bot initialized. Connected to Alpaca Paper API ($400,009.00 buying power).'},
+    {ts:new Date(Date.now()-180000).toISOString(),level:'INFO',source:'oms',msg:'[Alpaca Sync] 2 open positions (AAPL, SPY) synced to mobile/web dashboard.'},
+    {ts:new Date(Date.now()-60000).toISOString(),level:'INFO',source:'bot',msg:'[AAPL] Current Close: $319.58 | Z-Score: 2.0307 | Holding state.'}
+  ];
+
+  S.trades=[
+    {id:'ORD-9041',ts:'2026-10-19 14:32:10',ticker:'AAPL',strategy:'Bollinger Mean Reversion',regime:'MEAN_REVERT (H=0.44)',side:'BUY',qty:125,entry:317.40,exit:319.58,z_score:-2.12,ai_conf:0.74,slippage_bps:4.2,pnl:272.50,status:'OPEN',notes:'Synced from Alpaca Paper Positions'},
+    {id:'ORD-9040',ts:'2026-10-19 13:15:42',ticker:'GLD/GDX',strategy:'Engle-Granger Pairs (Chan Ch.7)',regime:'COINTEGRATED (p=0.012)',side:'BUY_SPREAD',qty:200,entry:184.20,exit:186.85,z_score:-2.24,ai_conf:0.82,slippage_bps:5.0,pnl:530.00,status:'CLOSED',notes:'Ornstein-Uhlenbeck half-life target hit'},
+    {id:'ORD-9039',ts:'2026-10-19 11:05:19',ticker:'SPY',strategy:'SMA 20/50 + ML Meta-Label',regime:'TRENDING (H=0.56)',side:'BUY',qty:40,entry:499.10,exit:502.15,z_score:0.85,ai_conf:0.71,slippage_bps:2.5,pnl:122.00,status:'OPEN',notes:'Momentum breakout confirmed by RF'}
+  ];
+
+  S.chanFeed=[
+    {
+      id:'CHAN-01',
+      source:'SSRN · Financial Economics Network',
+      url:'https://www.ssrn.com',
+      category:'MEAN_REVERSION',
+      title:'Cointegrated ETF Pairs: GLD vs. GDX & Ornstein-Uhlenbeck Half-Life',
+      chanRef:'Ernest Chan · Chapter 7 (Stationarity & Cointegration)',
+      published:'14 mins ago',
+      metrics:{sharpe:2.34,half_life:'10.2 Days',adf_p:0.012,hurst:0.41,friction_bps:5},
+      summary:'Validates Engle-Granger cointegration on Gold (GLD) vs. Gold Miners (GDX) with a 10.2-day Ornstein-Uhlenbeck mean-reversion half-life.',
+      formula:'dz(t) = -θ(z(t) - μ)dt + dW   |   Half-Life = ln(2) / θ',
+      code:`# Push GLD/GDX parameters directly to live_paper_trader.py\ndash.set_signal("GLD/GDX", "Engle-Granger Pairs", "ACTIVE", {"ou_half_life": 10.2, "adf_p": 0.012})`
+    },
+    {
+      id:'CHAN-02',
+      source:'epchan.blogspot.com · Quantitative Trading',
+      url:'https://epchan.blogspot.com',
+      category:'RISK_KELLY',
+      title:'Multi-Strategy Half-Kelly Capital Allocation & 1% Risk Circuit Breaker',
+      chanRef:'Ernest Chan · Chapter 6 (Money & Risk Management)',
+      published:'2 hours ago',
+      metrics:{sharpe:2.65,half_life:'Daily',adf_p:0.001,hurst:0.45,friction_bps:3},
+      summary:'Enforces F* = 0.5 * (C⁻¹M) Half-Kelly leverage alongside your 1% RiskManager share sizing before routing orders to Alpaca.',
+      formula:'Shares = floor((Buying_Power * 0.01) / |Entry - Stop|)',
+      code:`rm = RiskManager(account_balance=buying_power, max_risk_per_trade=0.01)\nshares = rm.calculate_position_size(entry_price, stop_loss)`
+    }
+  ];
+}
+initSeedData();
+
+const TABS=[
+  ['overview','1 · Live Graph & Log'],
+  ['alpaca','⚡ Alpaca Live OMS & Editor'],
+  ['chan','2 · Ernest Chan Hub'],
+  ['history','3 · Execution Spreadsheet (.CSV)'],
+  ['strategies','Signals']
+];
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const time=t=>t?new Date(t).toLocaleTimeString('en-GB'):'';
+const money=v=>typeof v==='number'?'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+const fmt=(k,v)=>typeof v==='number'?(/conf|rate|acc/.test(k)&&v<=1?Math.round(v*100)+'%':v.toLocaleString(undefined,{maximumFractionDigits:4})):esc(typeof v==='object'?JSON.stringify(v):v);
+const PILL={ACTIVE:'neon',ONLINE:'neon',FILLED:'neon',OPEN:'azure',DONE:'neon',CLOSED:'neon',WATCHING:'azure',BUY:'neon',LONG:'neon',SELL:'warn',SELL_SHORT:'warn',PAUSED:'warn',HALTED:'alert',ERROR:'alert'};
+const pill=t=>{const c=PILL[String(t).toUpperCase()]||'slate-400';return `<span class="font-mono text-xs px-2 py-0.5 rounded border ${c==='slate-400'?'border-edge text-mute':`border-${c}/50 text-${c} bg-${c}/10`}">${esc(t)}</span>`};
+const empty=m=>`<p class="text-mute text-sm py-4">${m}</p>`;
+const card=(h,b,x='')=>`<section class="bg-panel border border-edge rounded-lg p-4 ${x}">${h?`<h2 class="font-semibold mb-3 flex items-center justify-between">${h}</h2>`:''}${b}</section>`;
+const grid=o=>Object.keys(o||{}).length?`<dl class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">${Object.entries(o).map(([k,v])=>`<div class="bg-ink/60 border border-edge/60 rounded p-2"><dt class="text-mute text-[11px]">${esc(k.replace(/_/g,' '))}</dt><dd class="font-mono text-xs sm:text-sm mt-0.5">${fmt(k,v)}</dd></div>`).join('')}</dl>`:'';
+const stat=(l,v,s='')=>card('',`<div class="text-mute text-xs uppercase tracking-wider">${l}</div><div class="mt-1 font-mono text-xl sm:text-2xl font-semibold">${v}</div><div class="text-mute text-xs mt-1">${esc(s)}</div>`);
+const btn=(label,sub,cmd,tone,args={},conf='')=>`<button data-cmd="${cmd}" data-args='${JSON.stringify(args)}' ${conf?`data-confirm="${esc(conf)}"`:''} class="w-full text-left rounded-md border border-${tone}/50 bg-${tone}/10 hover:bg-${tone}/20 px-3 py-2.5 transition-colors"><div class="font-mono text-xs sm:text-sm text-${tone} font-medium">${label}</div><div class="text-[11px] text-mute mt-0.5">${sub}</div></button>`;
+
+const sigCard=s=>card('',`<div class="flex items-start justify-between gap-2"><div><span class="font-mono text-lg font-semibold text-slate-100">${esc(s.ticker)}</span> <span class="text-mute text-xs ml-1 font-mono">${esc(s.strategy)}</span></div>
+  <div class="flex items-center gap-2">${pill(s.enabled===false?'PAUSED':s.status||'—')}<button class="sw" role="switch" aria-checked="${s.enabled!==false}" data-cmd="toggle" data-args='${JSON.stringify({ticker:s.ticker,enabled:s.enabled===false})}'></button></div></div>
+  <div class="mt-3">${grid(s.metrics)}</div>`);
+const sigs=()=>Object.values(S.signals).length?Object.values(S.signals).map(sigCard).join(''):empty('No signals yet.');
+
+let chartObj=null, priceSeries=null, upperSeries=null, lowerSeries=null;
+function mountRealtimeChart(){
+  const container = document.getElementById('tvchart');
+  if(!container || typeof LightweightCharts === 'undefined') return;
+  container.innerHTML = '';
+  chartObj = LightweightCharts.createChart(container, {
+    width: container.clientWidth,
+    height: 310,
+    layout: { background: { type: 'solid', color: '#0b1220' }, textColor: '#8b9ab5', fontFamily: 'IBM Plex Mono' },
+    grid: { vertLines: { color: '#162238' }, horzLines: { color: '#162238' } },
+    rightPriceScale: { borderColor: '#1f2c44' },
+    timeScale: { borderColor: '#1f2c44', timeVisible: true, secondsVisible: true }
+  });
+  priceSeries = chartObj.addAreaSeries({ lineColor: '#39ff88', topColor: 'rgba(57, 255, 136, 0.20)', bottomColor: 'rgba(57, 255, 136, 0.01)', lineWidth: 2 });
+  upperSeries = chartObj.addLineSeries({ color: 'rgba(77, 163, 255, 0.55)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed });
+  lowerSeries = chartObj.addLineSeries({ color: 'rgba(255, 179, 71, 0.55)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed });
+  updateChartSeriesData();
+}
+
+function updateChartSeriesData(){
+  if(!priceSeries) return;
+  const key = S.chartTicker === 'GLD/GDX' ? 'GLD_GDX' : S.chartTicker;
+  const data = S.ticks[key] || S.ticks.AAPL;
+  priceSeries.setData(data);
+  const upper = [], lower = [];
+  const bandOffset = key === 'GLD_GDX' ? 0.22 : 1.85;
+  data.forEach((pt, idx) => {
+    const slice = data.slice(Math.max(0, idx-19), idx+1);
+    const mean = slice.reduce((a,b)=>a+b.value,0)/slice.length;
+    upper.push({time: pt.time, value: Number((mean + bandOffset).toFixed(3))});
+    lower.push({time: pt.time, value: Number((mean - bandOffset).toFixed(3))});
+  });
+  upperSeries.setData(upper);
+  lowerSeries.setData(lower);
+}
+
+const V={
+  overview(){
+    const a=S.kv.account||{}, n=S.kv.node||{};
+    const key = S.chartTicker === 'GLD/GDX' ? 'GLD_GDX' : S.chartTicker;
+    const arr = S.ticks[key] || S.ticks.AAPL;
+    const lastPrice = arr.length ? arr[arr.length-1].value : 0;
+
+    return `
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      ${stat('Alpaca Paper Status', pill(a.status||'ACTIVE'), 'Two-Way Live Broker Sync')}
+      ${stat('Buying Power', `<span class="text-azure">${money(a.buying_power)}</span>`, `Equity: ${money(a.equity||401851.50)}`)}
+      ${stat('Daily P&L', `<span class="${(a.daily_pnl||0)>=0?'text-neon':'text-alert'}">${(a.daily_pnl\vert{}\vert{}0)>=0?'+':''}${money(a.daily_pnl||1842.50)}</span>`, `${a.daily_pnl_pct||0.46}% vs Last Close`)}
+      ${stat('Cloud VM Daemon', pill(n.status||'Online'), n.host||'GCP VM · tmux')}
+    </div>
+
+    <div class="grid lg:grid-cols-12 gap-5 mt-5">
+      <div class="lg:col-span-7 bg-panel border border-edge rounded-lg p-3 sm:p-4 flex flex-col justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-edge">
+          <div class="flex items-center gap-1.5">
+            ${['AAPL','SPY','GLD/GDX'].map(t=>`<button data-ticker="${t}" class="font-mono text-xs px-2.5 py-1 rounded border ${S.chartTicker===t?'border-neon bg-neon/15 text-neon':'border-edge text-mute'}">${t}</button>`).join('')}
+          </div>
+          <div class="font-mono text-xs">
+            <span class="text-mute">Px: <strong id="livePx" class="text-neon text-sm">${S.chartTicker==='GLD/GDX'?lastPrice.toFixed(3):'$'+lastPrice.toFixed(2)}</strong></span>
+          </div>
+        </div>
+        <div id="tvchart" class="w-full my-2 rounded overflow-hidden border border-edge/60 bg-ink"></div>
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-edge text-xs font-mono">
+          <a href="#alpaca" class="text-neon hover:underline">⚡ Open Alpaca Order Ticket & Live Parameter Editor →</a>
+          <button id="simExecBtn" class="px-2.5 py-1 rounded bg-azure/15 border border-azure/50 text-azure">+ Quick Test Order</button>
+        </div>
+      </div>
+
+      <div class="lg:col-span-5 bg-panel border border-edge rounded-lg p-3 sm:p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between pb-3 border-b border-edge">
+          <span class="font-mono text-xs sm:text-sm font-semibold text-neon">tail -f ~/logs/trading_bot.log</span>
+          <span class="font-mono text-xs text-mute" id="logCount">${S.logs.length} lines</span>
+        </div>
+        <div id="logbox" class="scroll h-[310px] overflow-y-auto font-mono text-xs leading-6 bg-ink/90 border border-edge/70 rounded p-3 my-2 space-y-1">
+          ${renderLogLines()}
+        </div>
+        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-edge">
+          ${btn('/ai_veto','RF Check','ai_veto','azure')}
+          ${btn('!cancelall','Kill Switch','cancelall','alert',{},'Liquidate ALL Alpaca positions and pause bot?')}
+          ${btn('Resume','Unpause','resume','neon')}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <h2 class="font-semibold text-base mb-3">Active Strategy Monitor (Tap toggle to pause/resume on VM)</h2>
+      <div class="grid md:grid-cols-3 gap-4">${sigs()}</div>
+    </div>`;
+  },
+
+  // NEW TAB: OFFICIAL ALPACA LIVE OMS + PHONE/LAPTOP PARAMETER EDITOR
+  alpaca(){
+    const a = S.kv.account || {buying_power:400009, equity:401851.50};
+    const r = S.kv.risk || {max_risk_per_trade:0.01, max_position_pct:0.05, max_daily_drawdown:0.03, bb_window:20, z_entry_threshold:2.0, stop_loss_pct:0.02, poll_seconds:30};
+    const positions = (S.kv.alpaca_positions && S.kv.alpaca_positions.positions) || [];
+    const orders = (S.kv.alpaca_orders && S.kv.alpaca_orders.orders) || [];
+    const tk = S.orderTicket;
+    const riskPerShare = Math.abs((Number(tk.entry_price)||0) - (Number(tk.stop_loss)||0));
+    const autoShares = riskPerShare > 0 ? Math.floor(((a.buying_power||400000) * (r.max_risk_per_trade||0.01)) / riskPerShare) : 0;
+
+    return `
+    <div class="grid lg:grid-cols-12 gap-6">
+      <!-- Left 5 Cols: Direct Alpaca Order Ticket (Phone & Laptop Friendly) -->
+      <div class="lg:col-span-5 space-y-5">
+        ${card('⚡ Official Alpaca Order Ticket (Live Paper)', `
+          <form id="alpacaOrderForm" class="space-y-3 font-mono text-xs">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-mute block mb-1">Ticker Symbol</label>
+                <input id="ordSym" type="text" value="${esc(tk.symbol)}" class="w-full bg-ink border border-edge rounded px-3 py-2 text-slate-100 uppercase font-semibold">
+              </div>
+              <div>
+                <label class="text-mute block mb-1">Action Side</label>
+                <select id="ordSide" class="w-full bg-ink border border-edge rounded px-3 py-2 text-slate-100">
+                  <option value="BUY" ${tk.side==='BUY'?'selected':''}>BUY (Long)</option>
+                  <option value="SELL" ${tk.side==='SELL'?'selected':''}>SELL (Short / Exit)</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="text-mute block mb-1">Est. Entry ($)</label>
+                <input id="ordEntry" type="number" step="0.01" value="${tk.entry_price}" class="w-full bg-ink border border-edge rounded px-2.5 py-2 text-slate-100">
+              </div>
+              <div>
+                <label class="text-mute block mb-1">Stop Loss ($)</label>
+                <input id="ordStop" type="number" step="0.01" value="${tk.stop_loss}" class="w-full bg-ink border border-edge rounded px-2.5 py-2 text-slate-100">
+              </div>
+              <div>
+                <label class="text-mute block mb-1">Shares (0=Auto)</label>
+                <input id="ordQty" type="number" value="${tk.qty}" placeholder="${autoShares}" class="w-full bg-ink border border-edge rounded px-2.5 py-2 text-neon font-semibold">
+              </div>
+            </div>
+            <div class="bg-ink/90 border border-edge rounded p-2.5 text-[11px] space-y-1">
+              <div class="flex justify-between"><span class="text-mute">1% Risk Manager Auto-Size:</span><strong class="text-neon">${autoShares} shares</strong></div> <div class="flex justify-between"><span class="text-mute">Risk Per Share:</span><span>$${riskPerShare.toFixed(2)}</span></div>
+              <div class="flex justify-between"><span class="text-mute">Max Capital at Risk (1%):</span><span class="text-azure">${money((a.buying_power||400000)*(r.max_risk_per_trade||0.01))}</span></div>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded bg-neon/20 border border-neon text-neon font-semibold hover:bg-neon/30 transition">🚀 Route Order to Alpaca Paper API</button>
+          </form>
+        `)}
+
+        <!-- Live Sandbox & Risk Parameter Editor (Edit from Phone or Laptop) -->
+        ${card('🛠️ Live trading-sandbox Parameter Editor', `
+          <form id="paramEditForm" class="space-y-3 font-mono text-xs">
+            <p class="text-mute text-[11px] font-sans">Edit parameters below from your phone or laptop. Saving pushes changes straight into <code>live_paper_trader.py</code> on your GCP VM without restarting tmux.</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-mute block mb-1">Z-Score Entry (σ)</label>
+                <input id="pZ" type="number" step="0.1" value="${r.z_entry_threshold??2.0}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
+              </div>
+              <div>
+                <label class="text-mute block mb-1">Bollinger Window (d)</label>
+                <input id="pWin" type="number" value="${r.bb_window??20}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
+              </div>
+              <div>
+                <label class="text-mute block mb-1">Max Risk / Trade</label>
+                <input id="pRisk" type="number" step="0.005" value="${r.max_risk_per_trade??0.01}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
+              </div>
+              <div>
+                <label class="text-mute block mb-1">Stop-Loss Margin</label>
+                <input id="pStop" type="number" step="0.005" value="${r.stop_loss_pct??0.02}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
+              </div>
+              <div>
+                <label class="text-mute block mb-1">Daily Drawdown Breaker</label>
+                <input id="pDD" type="number" step="0.01" value="${r.max_daily_drawdown??0.03}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
+              </div>
+              <div>
+                <label class="text-mute block mb-1">VM Poll Interval (sec)</label>
+                <input id="pPoll" type="number" value="${r.poll_seconds??30}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
+              </div>
+            </div>
+            <button type="submit" class="w-full py-2 rounded bg-azure/20 border border-azure text-azure font-semibold hover:bg-azure/30 transition">💾 Save & Push Parameters to Cloud VM</button>
+          </form>
+        `)}
+      </div>
+
+      <!-- Right 7 Cols: Live Alpaca Open Positions & Recent Broker Orders -->
+      <div class="lg:col-span-7 space-y-5">
+        ${card(`📊 Open Alpaca Positions (${positions.length}) <button data-cmd="sync_alpaca" class="text-xs font-mono text-azure hover:underline">↻ Refresh</button>`, `
+          ${positions.length ? `
+          <div class="overflow-x-auto scroll">
+            <table class="excel-table">
+              <thead>
+                <tr>
+                  <th>Symbol</th><th>Side</th><th>Qty</th><th>Avg Entry</th><th>Current Px</th><th>Market Val</th><th>Unrealized P&L</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${positions.map(p=>`
+                  <tr>
+                    <td class="font-bold text-slate-100">${esc(p.symbol)}</td>
+                    <td>${pill(p.side)}</td>
+                    <td class="text-right">${p.qty}</td>
+                    <td class="text-right">$${Number(p.avg_entry_price).toFixed(2)}</td> <td class="text-right">$${Number(p.current_price).toFixed(2)}</td>
+                    <td class="text-right">${money(p.market_value)}</td>
+                    <td class="text-right font-semibold ${p.unrealized_pl>=0?'text-neon':'text-alert'}">${p.unrealized_pl>=0?'+':''}$${Number(p.unrealized_pl).toFixed(2)} (${p.unrealized_plpc}%)</td>
+                    <td><button data-closepos="${esc(p.symbol)}" class="px-2 py-0.5 rounded bg-alert/20 border border-alert/50 text-alert text-[11px] hover:bg-alert/30">Liquidate</button></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>` : empty('No open positions in Alpaca Paper account.')}
+        `)}
+
+        ${card(`🧾 Recent Official Alpaca Orders (${orders.length})`, `
+          ${orders.length ? `
+          <div class="overflow-x-auto scroll">
+            <table class="excel-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Fill Px</th><th>Status</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${orders.map(o=>`
+                  <tr>
+                    <td class="text-azure">${esc(o.id)}</td>
+                    <td class="text-mute">${time(o.created_at)}</td>
+                    <td class="font-semibold">${esc(o.symbol)}</td>
+                    <td>${pill(o.side)}</td>
+                    <td class="text-right">${o.qty}</td>
+                    <td class="text-right">${o.filled_avg_price?'$'+Number(o.filled_avg_price).toFixed(2):'—'}</td>
+                    <td>${pill(o.status)}</td>
+                    <td>${/NEW|PENDING|ACCEPTED/.test(String(o.status).toUpperCase()) ? `<button data-cancelord="${esc(o.full_id||o.id)}" class="px-2 py-0.5 rounded border border-warn text-warn text-[11px]">Cancel</button>` : '<span class="text-mute text-[11px]">—</span>'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>` : empty('No recent orders found.')}
+        `)}
+      </div>
+    </div>`;
+  },
+
+  chan(){
+    return `
+    <div class="bg-panel border border-edge rounded-lg p-4 mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-base sm:text-lg font-semibold text-neon font-mono">Ernest P. Chan · Quantitative Trading Strategy Hub</h1>
+        <p class="text-xs sm:text-sm text-mute">Research blueprints from SSRN, NBER, arXiv (q-fin), and epchan.blogspot.com.</p>
+      </div>
+      <div class="flex flex-wrap gap-2 font-mono text-xs">
+        <a href="https://www.ssrn.com" target="_blank" class="px-2.5 py-1 rounded bg-ink border border-edge text-azure">SSRN ↗</a>
+        <a href="https://www.nber.org" target="_blank" class="px-2.5 py-1 rounded bg-ink border border-edge text-azure">NBER ↗</a>
+        <a href="https://arxiv.org/archive/q-fin" target="_blank" class="px-2.5 py-1 rounded bg-ink border border-edge text-azure">arXiv q-fin ↗</a>
+        <a href="https://epchan.blogspot.com" target="_blank" class="px-2.5 py-1 rounded bg-ink border border-edge text-azure">epchan.blogspot ↗</a>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      ${S.chanFeed.map(item => `
+        <article class="bg-panel border border-edge rounded-lg p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between text-xs font-mono text-azure"><span>${esc(item.source)}</span><span>${esc(item.published)}</span></div>
+            <h3 class="text-base font-semibold mt-1">${esc(item.title)}</h3>
+            <p class="text-xs text-warn font-mono mt-0.5">${esc(item.chanRef)}</p>
+            <p class="text-sm text-slate-300 mt-2">${esc(item.summary)}</p>
+            <div class="mt-2 bg-ink border border-edge rounded p-2 font-mono text-xs text-neon">${esc(item.formula)}</div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-edge flex justify-between items-center">
+            <span class="font-mono text-xs text-mute">Sharpe: <strong class="text-neon">${item.metrics.sharpe}</strong> · Half-Life: ${item.metrics.half_life}</span>
+            <a href="${item.url}" target="_blank" class="font-mono text-xs text-azure hover:underline">Read Source ↗</a>
+          </div>
+        </article>
+      `).join('')}
+    </div>`;
+  },
+
+  history(){
+    const rows = S.trades;
+    const totalPnl = rows.reduce((s,r)=>s+(Number(r.pnl)||0),0);
+    return `
+    <div class="bg-panel border border-edge rounded-lg p-4 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-edge pb-3">
+        <div>
+          <h1 class="text-base sm:text-lg font-semibold">Execution Ledger & Strategy Spreadsheet (.CSV)</h1>
+          <p class="text-xs text-mute">Every Alpaca order routed via your VM or phone is logged here. Tap any Note cell to edit inline from mobile or laptop.</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="exportCsvBtn" class="font-mono text-xs px-3 py-1.5 rounded border border-neon/50 bg-neon/15 text-neon">⬇ Export .CSV (Excel)</button>
+        </div>
+      </div>
+      <div class="bg-ink p-2.5 rounded border border-edge font-mono text-xs flex flex-wrap gap-6">
+        <span>fx =SUM(Net_PnL): <strong class="${totalPnl>=0?'text-neon':'text-alert'}">${totalPnl>=0?'+':''}${money(totalPnl)}</strong></span>
+        <span>Total Executions: <strong class="text-azure">${rows.length}</strong></span>
+      </div>
+      <div class="overflow-x-auto scroll border border-edge rounded">
+        <table class="excel-table">
+          <thead>
+            <tr>
+              <th class="excel-row-num">#</th><th>Order ID</th><th>Timestamp</th><th>Ticker</th><th>Strategy Used</th><th>Side</th><th>Qty</th><th>Entry Px</th><th>Current/Exit</th><th>Z-Score</th><th>Net P&L</th><th>Status</th><th>Quant Notes (Tap to Edit)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r,i)=>`
+              <tr>
+                <td class="excel-row-num">${i+1}</td>
+                <td class="text-azure">${esc(r.id)}</td>
+                <td class="text-mute">${esc(r.ts)}</td>
+                <td class="font-semibold">${esc(r.ticker)}</td>
+                <td>${esc(r.strategy)}</td>
+                <td>${pill(r.side)}</td>
+                <td class="text-right">${r.qty}</td>
+                <td class="text-right">$${Number(r.entry).toFixed(2)}</td>
+                <td class="text-right">$${Number(r.exit).toFixed(2)}</td>
+                <td class="text-right">${Number(r.z_score||0).toFixed(2)}σ</td>
+                <td class="text-right font-semibold ${r.pnl>=0?'text-neon':'text-alert'}">${r.pnl>=0?'+':''}$${Number(r.pnl).toFixed(2)}</td>
+                <td>${pill(r.status)}</td>
+                <td><input type="text" data-noteid="${esc(r.id)}" value="${esc(r.notes||'')}" class="excel-cell-input"></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  },
+
+  strategies:()=>`<div class="space-y-4">${sigs()}</div>`
+};
+
+function renderLogLines(){
+  return S.logs.length ? S.logs.map(l=>`<div><span class="text-mute">${time(l.ts)}</span> <span class="${{ERROR:'text-alert',WARNING:'text-warn'}[l.level]||'text-neon'}">${esc((l.level||'INFO').padEnd(5))}</span> <span class="text-azure">[${esc(l.source||'bot')}]</span> ${esc(l.msg)}</div>`).join('') : empty('No log lines yet.');
+}
+
+let tab=location.hash.slice(1)||'overview';
+function render(){
+  if(!V[tab])tab='overview';
+  $('#tabs').innerHTML=TABS.map(([k,l])=>`<a href="#${k}" class="px-3 py-2 text-xs sm:text-sm font-mono whitespace-nowrap border-b-2 transition ${k===tab?'border-neon text-neon font-semibold':'border-transparent text-mute hover:text-slate-200'}">${l}</a>`).join('');
+  $('#view').innerHTML=V[tab]();
+  const lb=$('#logbox');if(lb)lb.scrollTop=lb.scrollHeight;
+  if(tab==='overview') mountRealtimeChart();
+  bindForms();
+}
+addEventListener('hashchange',()=>{tab=location.hash.slice(1)||'overview';render()});
+
+function bindForms(){
+  // Bind Alpaca Order Ticket Form
+  const ordForm = $('#alpacaOrderForm');
+  if(ordForm){
+    ['ordEntry','ordStop','ordSym','ordSide','ordQty'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.addEventListener('input', ()=>{
+        S.orderTicket.symbol = $('#ordSym').value.toUpperCase();
+        S.orderTicket.side = $('#ordSide').value;
+        S.orderTicket.entry_price = parseFloat($('#ordEntry').value)||0;
+        S.orderTicket.stop_loss = parseFloat($('#ordStop').value)||0;
+        S.orderTicket.qty = parseInt($('#ordQty').value)||0;
+      });
+    });
+    ordForm.addEventListener('submit', e=>{
+      e.preventDefault();
+      const args = {
+        symbol: $('#ordSym').value.toUpperCase().trim(),
+        side: $('#ordSide').value,
+        entry_price: parseFloat($('#ordEntry').value)||0,
+        stop_loss: parseFloat($('#ordStop').value)||0,
+        qty: parseInt($('#ordQty').value)||0,
+        strategy: 'Manual Web/Mobile OMS'
+      };
+      send('submit_order', args);
+    });
+  }
+
+  // Bind Live Parameter Editor Form
+  const pForm = $('#paramEditForm');
+  if(pForm){
+    pForm.addEventListener('submit', e=>{
+      e.preventDefault();
+      const newParams = {
+        z_entry_threshold: parseFloat($('#pZ').value)||2.0,
+        bb_window: parseInt($('#pWin').value)||20,
+        max_risk_per_trade: parseFloat($('#pRisk').value)||0.01,
+        stop_loss_pct: parseFloat($('#pStop').value)||0.02,
+        max_daily_drawdown: parseFloat($('#pDD').value)||0.03,
+        poll_seconds: parseInt($('#pPoll').value)||30
+      };
+      S.kv.risk = {...(S.kv.risk||{}), ...newParams};
+      send('update_params', newParams);
+    });
+  }
+
+  // Bind Inline Spreadsheet Notes
+  document.querySelectorAll('[data-noteid]').forEach(inp => {
+    inp.addEventListener('change', e => {
+      const row = S.trades.find(t => t.id === inp.dataset.noteid);
+      if(row){ row.notes = e.target.value; toast(`Saved note for ${row.id}`); }
+    });
+  });
+}
+
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.remove('hidden');clearTimeout(tt);tt=setTimeout(()=>t.classList.add('hidden'),4000)}
+function setConn(s){const e=$('#conn');const m={live:['● Alpaca+VM Live','border-neon/50 text-neon'],offline:['reconnecting…','border-warn/50 text-warn'],demo:['sandbox preview','border-azure/50 text-azure']}[s];e.textContent=m[0];e.className='font-mono text-xs px-2 py-1 rounded border '+m[1]}
+
+let sb;
+async function send(cmd,args){
+  S.logs.push({ts:new Date().toISOString(), level:'INFO', source:'web', msg:`Queued '${cmd}' -> ${JSON.stringify(args)}`});
+
+  // Instant optimistic UI update in Demo/Preview mode
+  if(demo){
+    if(cmd==='submit_order'){
+      const bp = S.kv.account.buying_power || 400000;
+      const riskShare = Math.abs((args.entry_price||319) - (args.stop_loss||313)) || 5;
+      const qty = args.qty > 0 ? args.qty : Math.floor((bp * 0.01) / riskShare);
+      const id = 'ORD-' + Math.floor(1000 + Math.random()*9000);
+      S.kv.alpaca_positions.positions.unshift({
+        symbol:args.symbol, qty, side:args.side==='BUY'?'long':'short',
+        avg_entry_price:args.entry_price, current_price:args.entry_price,
+        market_value:qty*args.entry_price, unrealized_pl:0, unrealized_plpc:0
+      });
+      S.kv.alpaca_orders.orders.unshift({
+        id, full_id:id, symbol:args.symbol, side:args.side, qty,
+        filled_avg_price:args.entry_price, status:'FILLED', type:'MARKET', created_at:new Date().toISOString()
+      });
+      S.trades.unshift({
+        id, ts:new Date().toISOString().replace('T',' ').slice(0,19),
+        ticker:args.symbol, strategy:args.strategy||'Manual OMS', side:args.side,
+        qty, entry:args.entry_price, exit:args.entry_price, z_score:0, pnl:0, status:'FILLED', notes:'Routed from Mobile/Laptop OMS'
+      });
+    } else if(cmd==='close_position'){
+      S.kv.alpaca_positions.positions = S.kv.alpaca_positions.positions.filter(p=>p.symbol!==args.symbol);
+    }
+    render();
+    return toast(`✅ [${cmd}] executed (Add Supabase keys in CFG for live GCP VM routing)`);
+  }
+
+  const {error}=await sb.from('commands').insert({cmd,args,source:'web'});
+  toast(error?error.message:`⚡ Sent '${cmd}' to Cloud VM & Alpaca`);
+}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-cmd]');
+  if(b){
+    if(b.dataset.confirm&&!confirm(b.dataset.confirm))return;
+    send(b.dataset.cmd,JSON.parse(b.dataset.args||'{}'));
+    return;
+  }
+  const cp=e.target.closest('[data-closepos]');
+  if(cp){
+    const sym = cp.dataset.closepos;
+    if(confirm(`Close open Alpaca position for ${sym}?`)) send('close_position',{symbol:sym});
+    return;
+  }
+  const co=e.target.closest('[data-cancelord]');
+  if(co){
+    send('cancel_order',{order_id:co.dataset.cancelord});
+    return;
+  }
+  const tk=e.target.closest('[data-ticker]');
+  if(tk){ S.chartTicker=tk.dataset.ticker; render(); return; }
+  if(e.target.closest('#simExecBtn')){
+    location.hash='#alpaca';
+    return;
+  }
+  if(e.target.closest('#exportCsvBtn')){
+    const headers = ['Order_ID','Timestamp','Ticker','Strategy','Side','Qty','Entry','Exit','Z_Score','Net_PnL','Status','Notes'];
+    const csv = [headers.join(','), ...S.trades.map(r=>[r.id,r.ts,r.ticker,`"${r.strategy}"`,r.side,r.qty,r.entry,r.exit,r.z_score,r.pnl,r.status,`"${r.notes||''}"`].join(','))].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download = 'alpaca_sandbox_ledger.csv';
+    a.click();
+    return;
+  }
+});
+
+async function load(){
+  const [kv,sg,rs,lg,cm]=await Promise.all([sb.from('kv').select('*'),sb.from('signals').select('*'),
+    sb.from('results').select('*').order('created_at',{ascending:false}).limit(50),
+    sb.from('logs').select('*').order('id',{ascending:false}).limit(200),
+    sb.from('commands').select('*').order('id',{ascending:false}).limit(30)]);
+  (kv.data||[]).forEach(r=>S.kv[r.key]=r.data);
+  (sg.data||[]).forEach(r=>S.signals[r.ticker]=r);
+  if(rs.data?.length){
+    S.results=rs.data;
+    const ledgerRows = rs.data.filter(x=>x.kind==='TRADE_LEDGER').map(x=>x.metrics);
+    if(ledgerRows.length) S.trades = ledgerRows;
+  }
+  if(lg.data?.length)S.logs=lg.data.reverse();
+  if(cm.data?.length)S.commands=cm.data;
+  render();
+}
+
+function subscribe(){
+  sb.channel('sandbox').on('postgres_changes',{event:'*',schema:'public'},p=>{
+    if(p.eventType==='DELETE')return;const r=p.new,t=p.table;
+    if(t==='kv')S.kv[r.key]=r.data;
+    else if(t==='signals')S.signals[r.ticker]=r;
+    else if(t==='results'){
+      S.results=[r,...S.results].slice(0,50);
+      if(r.kind==='TRADE_LEDGER' && r.metrics) S.trades.unshift(r.metrics);
+    }
+    else if(t==='logs')S.logs=[...S.logs,r].slice(-200);
+    else if(t==='commands'){
+      const i=S.commands.findIndex(c=>c.id===r.id);i<0?S.commands.unshift(r):S.commands[i]=r;
+      if(r.status==='done'||r.status==='error')toast(`${r.cmd}: ${r.status}${r.result?' · '+r.result:''}`);
+    }
+    render();
+  }).subscribe(s=>{setConn(s==='SUBSCRIBED'?'live':'offline');if(s==='SUBSCRIBED')load()});
+}
+
+async function start(){
+  $('#login').classList.add('hidden');$('#signout').classList.remove('hidden');
+  await load();subscribe();
+}
+async function init(){
+  render();
+  if(demo)return setConn('demo');
+  sb=supabase.createClient(CFG.url,CFG.key);
+  const {data:{session}}=await sb.auth.getSession();
+  session?start():$('#login').classList.remove('hidden');
+  $('#lf').addEventListener('submit',async e=>{e.preventDefault();
+    const {error}=await sb.auth.signInWithPassword({email:$('#em').value,password:$('#pw').value});
+    error?$('#lerr').textContent=error.message:start()});
+  $('#signout').addEventListener('click',async()=>{await sb.auth.signOut();location.reload()});
+}
+init();
+</script>
+</body>
+</html>
