@@ -1,0 +1,8 @@
+*.py
+*.ipynb
+*.parquet
+requirements.txt
+venv/
+data/
+logs/
+__pycache__/

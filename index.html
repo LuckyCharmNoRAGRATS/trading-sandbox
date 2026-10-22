@@ -11,31 +11,57 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <script>
-tailwind.config={theme:{extend:{colors:{ink:'#0b1220',panel:'#111a2b',edge:'#1f2c44',mute:'#8b9ab5',neon:'#39ff88',azure:'#4da3ff',warn:'#ffb347',alert:'#ff5c7a'},
-fontFamily:{sans:['"IBM Plex Sans"','system-ui','sans-serif'],mono:['"IBM Plex Mono"','ui-monospace','monospace']}}}}
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        ink: '#0b1220',
+        panel: '#111a2b',
+        edge: '#1f2c44',
+        mute: '#8b9ab5',
+        neon: '#39ff88',
+        azure: '#4da3ff',
+        warn: '#ffb347',
+        alert: '#ff5c7a'
+      },
+      fontFamily: {
+        sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace']
+      }
+    }
+  }
+};
 </script>
 <style>
-html,body{background:#0b1220}
-body{background-image:radial-gradient(1200px 500px at 85% -10%,rgba(77,163,255,.10),transparent 60%),radial-gradient(900px 400px at 0% 0%,rgba(57,255,136,.06),transparent 60%);padding-bottom:72px}
-.pulse{animation:pulse 2s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.sw{width:40px;height:22px;border-radius:11px;background:#1f2c44;position:relative;transition:background .2s;flex:none}
-.sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#8b9ab5;transition:transform .2s,background .2s}
-.sw[aria-checked="true"]{background:rgba(57,255,136,.25)}.sw[aria-checked="true"]::after{transform:translateX(18px);background:#39ff88}
-button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #4da3ff;outline-offset:2px}
-.scroll::-webkit-scrollbar{height:6px;width:8px}.scroll::-webkit-scrollbar-thumb{background:#1f2c44;border-radius:4px}
-.excel-table{border-collapse:collapse;width:100%;font-family:'IBM Plex Mono',monospace;font-size:12px}
-.excel-table th{background:#162238;color:#8b9ab5;border:1px solid #1f2c44;padding:6px 10px;text-align:left;font-weight:600;user-select:none;cursor:pointer;white-space:nowrap}
-.excel-table th:hover{background:#1d2d4a;color:#e2e8f0}
-.excel-table td{border:1px solid #1f2c44;padding:5px 10px;white-space:nowrap;background:#0e1626}
-.excel-table tr:hover td{background:#142036}
-.excel-row-num{background:#162238 !important;color:#8b9ab5;text-align:center;width:36px;user-select:none}
-.excel-cell-input{background:transparent;border:none;color:#e2e8f0;width:100%;font-family:'IBM Plex Mono',monospace;font-size:12px}
-.excel-cell-input:focus{outline:1px solid #39ff88;background:#0b1220;padding:2px 4px}
+html, body { background: #0b1220; color: #e2e8f0; }
+body {
+  background-image:
+    radial-gradient(1200px 500px at 85% -10%, rgba(77,163,255,.10), transparent 60%),
+    radial-gradient(900px 400px at 0% 0%, rgba(57,255,136,.06), transparent 60%);
+  padding-bottom: 76px;
+}
+.pulse { animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.sw { width: 40px; height: 22px; border-radius: 11px; background: #1f2c44; position: relative; transition: background .2s; flex: none; cursor: pointer; }
+.sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #8b9ab5; transition: transform .2s, background .2s; }
+.sw[aria-checked="true"] { background: rgba(57,255,136,.25); }
+.sw[aria-checked="true"]::after { transform: translateX(18px); background: #39ff88; }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid #4da3ff; outline-offset: 2px; }
+.scroll::-webkit-scrollbar { height: 6px; width: 8px; }
+.scroll::-webkit-scrollbar-thumb { background: #1f2c44; border-radius: 4px; }
+.excel-table { border-collapse: collapse; width: 100%; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+.excel-table th { background: #162238; color: #8b9ab5; border: 1px solid #1f2c44; padding: 6px 10px; text-align: left; font-weight: 600; user-select: none; cursor: pointer; white-space: nowrap; }
+.excel-table th:hover { background: #1d2d4a; color: #e2e8f0; }
+.excel-table td { border: 1px solid #1f2c44; padding: 5px 10px; white-space: nowrap; background: #0e1626; }
+.excel-table tr:hover td { background: #142036; }
+.excel-row-num { background: #162238 !important; color: #8b9ab5; text-align: center; width: 36px; user-select: none; }
+.excel-cell-input { background: transparent; border: none; color: #e2e8f0; width: 100%; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+.excel-cell-input:focus { outline: 1px solid #39ff88; background: #0b1220; padding: 2px 4px; }
 </style>
 </head>
 <body class="font-sans text-slate-200 min-h-screen antialiased">
 
-<!-- Sticky Top Bar -->
+<!-- Top Navigation Header -->
 <header class="border-b border-edge sticky top-0 z-30 bg-ink/95 backdrop-blur">
   <div class="max-w-7xl mx-auto px-3 sm:px-4 pt-3 flex items-center justify-between gap-2">
     <div class="flex items-center gap-2">
@@ -44,18 +70,19 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
       <span class="hidden md:inline-block text-xs font-mono text-azure border border-azure/40 px-2 py-0.5 rounded bg-azure/10">Alpaca Paper OMS Sync</span>
     </div>
     <div class="flex items-center gap-2">
-      <button data-cmd="sync_alpaca" class="font-mono text-xs px-2.5 py-1 rounded border border-azure/50 bg-azure/15 text-azure hover:bg-azure/25">↻ Sync Alpaca</button>
-      <button id="simToggle" class="hidden sm:inline-block font-mono text-xs px-2.5 py-1 rounded border border-neon/50 bg-neon/10 text-neon">● Stream: ON</button>
-      <span id="conn" class="font-mono text-xs px-2 py-1 rounded border border-edge text-mute">connecting…</span>
+      <button data-cmd="sync_alpaca" class="font-mono text-xs px-2.5 py-1 rounded border border-azure/50 bg-azure/15 text-azure hover:bg-azure/25 transition">↻ Sync Alpaca</button>
+      <button id="simToggle" class="font-mono text-xs px-2.5 py-1 rounded border border-neon/50 bg-neon/10 text-neon hover:bg-neon/20 transition">● Stream: ON</button>
+      <span id="conn" class="font-mono text-xs px-2 py-1 rounded border border-azure/50 text-azure">sandbox ready</span>
       <button id="signout" class="hidden text-xs text-mute hover:text-slate-200">Sign out</button>
     </div>
   </div>
   <nav id="tabs" class="max-w-7xl mx-auto px-3 sm:px-4 mt-2 flex gap-1 overflow-x-auto scroll" aria-label="Sections"></nav>
 </header>
 
+<!-- Main Dynamic View Container -->
 <main id="view" class="max-w-7xl mx-auto px-3 sm:px-4 py-5"></main>
 
-<!-- Mobile Bottom Quick-Action Navigation Bar (Phone Ergonomics) -->
+<!-- Mobile Bottom Quick-Action Navigation Bar -->
 <nav class="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-panel/95 backdrop-blur border-t border-edge grid grid-cols-4 text-center font-mono text-[11px]">
   <a href="#overview" class="py-2.5 text-slate-200 hover:text-neon flex flex-col items-center"><span>📈</span><span>Chart/Log</span></a>
   <a href="#alpaca" class="py-2.5 text-neon font-semibold flex flex-col items-center"><span>⚡</span><span>Alpaca OMS</span></a>
@@ -63,6 +90,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
   <a href="#history" class="py-2.5 text-slate-200 hover:text-neon flex flex-col items-center"><span>📊</span><span>Excel CSV</span></a>
 </nav>
 
+<!-- Toast Notification -->
 <div id="toast" class="fixed bottom-16 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 hidden bg-panel border border-neon/60 shadow-2xl rounded px-4 py-2 text-xs sm:text-sm max-w-[92vw] font-mono text-slate-100" role="status"></div>
 
 <!-- Strategy Blueprint Modal -->
@@ -79,660 +107,1329 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 <!-- Supabase Login Modal -->
 <div id="login" class="hidden fixed inset-0 z-50 bg-ink/95 flex items-center justify-center p-4">
   <form id="lf" class="bg-panel border border-edge rounded-lg p-5 w-full max-w-sm space-y-3">
-    <h1 class="text-lg font-semibold">Sign in to Trading Sandbox</h1>
+    <div class="flex items-center justify-between">
+      <h1 class="text-lg font-semibold">Sign in to Trading Sandbox</h1>
+      <button type="button" id="skipLogin" class="text-xs font-mono text-azure hover:underline">Use Demo Mode</button>
+    </div>
     <p class="text-sm text-mute">Authenticate to control your Alpaca Paper account & GCP VM.</p>
     <input id="em" type="email" required autocomplete="username" placeholder="Email" class="w-full bg-ink border border-edge rounded px-3 py-2 text-sm">
     <input id="pw" type="password" required autocomplete="current-password" placeholder="Password" class="w-full bg-ink border border-edge rounded px-3 py-2 text-sm">
     <p id="lerr" class="text-sm text-alert min-h-[1.25rem]"></p>
-    <button class="w-full rounded bg-neon/15 border border-neon/50 text-neon py-2 text-sm hover:bg-neon/25">Sign in</button>
+    <button type="submit" class="w-full rounded bg-neon/15 border border-neon/50 text-neon py-2 text-sm hover:bg-neon/25">Sign in</button>
   </form>
 </div>
 
 <script>
-// 1) Paste your Supabase project URL and public anon key (Project Settings → API). Never put your Alpaca secret key here.
-const CFG={url:"https://pazsmoagmylcjlkmczmx.supabase.co/rest/v1/",key:"YOUR_ANON_KEY"};
-const demo=CFG.url.includes("pazsmoagmylcjlkmczmx");
-const $=s=>document.querySelector(s);
-
-const S={
-  kv:{},
-  signals:{},
-  results:[],
-  logs:[],
-  commands:[],
-  chartTicker:'AAPL',
-  simActive:true,
-  sheetFilter:'',
-  sheetStrategy:'ALL',
-  sheetSortCol:'ts',
-  sheetSortAsc:false,
-  chanFilter:'ALL',
-  orderTicket:{symbol:'AAPL',side:'BUY',order_type:'MARKET',qty:0,entry_price:319.58,stop_loss:313.19,strategy:'Bollinger Mean Reversion'},
-  ticks:{AAPL:[],SPY:[],GLD_GDX:[]},
-  trades:[],
-  chanFeed:[]
+// ============================================================================
+// 1. CONFIGURATION (Replace with your Supabase URL and Anon Key when ready)
+// ============================================================================
+const CFG = {
+  url: "https://YOUR-PROJECT.supabase.co",
+  key: "YOUR_ANON_KEY"
 };
 
-function initSeedData(){
-  S.kv={
-    account:{status:'ACTIVE',buying_power:400009.00,equity:401851.50,daily_pnl:1842.50,daily_pnl_pct:0.46,kelly_leverage:1.35},
-    node:{status:'Online',host:'GCP e2-micro · tmux (tradingbot)'},
-    discord:{online:true,last_event:'Connected to Gateway · #system-status'},
-    risk:{max_risk_per_trade:0.01,max_position_pct:0.05,max_daily_drawdown:0.03,bb_window:20,z_entry_threshold:2.0,stop_loss_pct:0.02,ai_confidence_min:0.60,poll_seconds:30},
-    alpaca_positions:{
-      positions:[
-        {symbol:'AAPL',qty:125,side:'long',avg_entry_price:317.40,current_price:319.58,market_value:39947.50,unrealized_pl:272.50,unrealized_plpc:0.69},
-        {symbol:'SPY',qty:40,side:'long',avg_entry_price:499.10,current_price:502.15,market_value:20086.00,unrealized_pl:122.00,unrealized_plpc:0.61}
+const $ = function(s) { return document.querySelector(s); };
+let sb = null;
+
+// ============================================================================
+// 2. APPLICATION STATE & SEED DATA
+// ============================================================================
+const S = {
+  kv: {},
+  signals: {},
+  results: [],
+  logs: [],
+  commands: [],
+  chartTicker: 'AAPL',
+  simActive: true,
+  sheetFilter: '',
+  sheetStrategy: 'ALL',
+  sheetSortCol: 'ts',
+  sheetSortAsc: false,
+  chanFilter: 'ALL',
+  orderTicket: {
+    symbol: 'AAPL',
+    side: 'BUY',
+    order_type: 'MARKET',
+    qty: 0,
+    entry_price: 319.58,
+    stop_loss: 313.19,
+    strategy: 'Bollinger Mean Reversion'
+  },
+  ticks: { AAPL: [], SPY: [], GLD_GDX: [] },
+  trades: [],
+  chanFeed: []
+};
+
+function initSeedData() {
+  S.kv = {
+    account: { status: 'ACTIVE', buying_power: 400009.00, equity: 401851.50, daily_pnl: 1842.50, daily_pnl_pct: 0.46, kelly_leverage: 1.35 },
+    node: { status: 'Online', host: 'GCP e2-micro · tmux (tradingbot)' },
+    discord: { online: true, last_event: 'Connected to Gateway · #system-status' },
+    risk: { max_risk_per_trade: 0.01, max_position_pct: 0.05, max_daily_drawdown: 0.03, bb_window: 20, z_entry_threshold: 2.0, stop_loss_pct: 0.02, ai_confidence_min: 0.60, poll_seconds: 30 },
+    data: { provider: 'Alpaca IEX + Parquet Cache', tickers_cached: 6, last_sync: '2 mins ago', adf_stationarity: 'PASS (p < 0.05)' },
+    models: {
+      'RandomForest Meta-Labeler': { accuracy: 0.684, threshold: 0.60, cv_method: 'Purged 5-Fold CV' },
+      'Ornstein-Uhlenbeck Spread': { half_life_days: 9.8, hurst_exp: 0.421, cointegration_p: 0.018 }
+    },
+    alpaca_positions: {
+      positions: [
+        { symbol: 'AAPL', qty: 125, side: 'long', avg_entry_price: 317.40, current_price: 319.58, market_value: 39947.50, unrealized_pl: 272.50, unrealized_plpc: 0.69 },
+        { symbol: 'SPY', qty: 40, side: 'long', avg_entry_price: 499.10, current_price: 502.15, market_value: 20086.00, unrealized_pl: 122.00, unrealized_plpc: 0.61 }
       ]
     },
-    alpaca_orders:{
-      orders:[
-        {id:'9041a8f2',full_id:'9041a8f2-alpaca',symbol:'AAPL',side:'BUY',qty:125,filled_avg_price:317.40,status:'FILLED',type:'MARKET',created_at:new Date(Date.now()-1800000).toISOString()},
-        {id:'9040b3c1',full_id:'9040b3c1-alpaca',symbol:'SPY',side:'BUY',qty:40,filled_avg_price:499.10,status:'FILLED',type:'MARKET',created_at:new Date(Date.now()-5400000).toISOString()}
+    alpaca_orders: {
+      orders: [
+        { id: '9041a8f2', full_id: '9041a8f2-alpaca', symbol: 'AAPL', side: 'BUY', qty: 125, filled_avg_price: 317.40, status: 'FILLED', type: 'MARKET', created_at: new Date(Date.now() - 1800000).toISOString() },
+        { id: '9040b3c1', full_id: '9040b3c1-alpaca', symbol: 'SPY', side: 'BUY', qty: 40, filled_avg_price: 499.10, status: 'FILLED', type: 'MARKET', created_at: new Date(Date.now() - 5400000).toISOString() }
       ]
     }
   };
 
-  S.signals={
-    AAPL:{ticker:'AAPL',strategy:'Bollinger Mean Reversion (20d, 2.0σ)',status:'NO SIGNAL',enabled:true,metrics:{close:319.58,sma:316.40,upper_band:321.10,lower_band:311.70,z_score:2.031,hurst:0.442}},
-    SPY:{ticker:'SPY',strategy:'SMA 20/50 Crossover + ML Meta-Label',status:'WATCHING',enabled:true,metrics:{close:502.15,sma:501.80,meta_confidence:0.64,hurst:0.465}},
-    'GLD/GDX':{ticker:'GLD/GDX',strategy:'Engle-Granger Cointegrated Pairs (Chan Ch.7)',status:'ACTIVE',enabled:true,metrics:{spread_z:-2.14,hedge_ratio:1.632,ou_half_life:10.2,adf_pvalue:0.012}}
+  S.signals = {
+    AAPL: { ticker: 'AAPL', strategy: 'Bollinger Mean Reversion (20d, 2.0s)', status: 'NO SIGNAL', enabled: true, metrics: { close: 319.58, sma_20: 316.40, upper_band: 321.10, lower_band: 311.70, z_score: 2.031, hurst: 0.442 } },
+    SPY: { ticker: 'SPY', strategy: 'SMA 20/50 Crossover + ML Meta-Label', status: 'WATCHING', enabled: true, metrics: { close: 502.15, sma_20: 501.80, sma_50: 498.90, meta_confidence: 0.64, hurst: 0.465 } },
+    'GLD/GDX': { ticker: 'GLD/GDX', strategy: 'Engle-Granger Cointegrated Pairs (Chan Ch.7)', status: 'ACTIVE', enabled: true, metrics: { spread_z: -2.14, hedge_ratio: 1.632, ou_half_life: 10.2, adf_pvalue: 0.012, meta_confidence: 0.78 } }
   };
 
-  const now = Math.floor(Date.now()/1000) - (120 * 60);
+  const now = Math.floor(Date.now() / 1000) - (120 * 60);
   let pA = 318.20, pS = 500.50, pG = 1.45;
-  for(let i=0;i<120;i++){
-    const t = now + i*60;
-    pA += (Math.random()-0.492)*0.45;
-    pS += (Math.random()-0.495)*0.55;
-    pG += (Math.random()-0.50)*0.08;
-    S.ticks.AAPL.push({time:t, value:Number(pA.toFixed(2))});
-    S.ticks.SPY.push({time:t, value:Number(pS.toFixed(2))});
-    S.ticks.GLD_GDX.push({time:t, value:Number(pG.toFixed(3))});
+  for (let i = 0; i < 120; i++) {
+    const t = now + i * 60;
+    pA += (Math.random() - 0.492) * 0.45;
+    pS += (Math.random() - 0.495) * 0.55;
+    pG += (Math.random() - 0.50) * 0.08;
+    S.ticks.AAPL.push({ time: t, value: Number(pA.toFixed(2)) });
+    S.ticks.SPY.push({ time: t, value: Number(pS.toFixed(2)) });
+    S.ticks.GLD_GDX.push({ time: t, value: Number(pG.toFixed(3)) });
   }
 
-  S.logs=[
-    {ts:new Date(Date.now()-300000).toISOString(),level:'INFO',source:'bot',msg:'Bot initialized. Connected to Alpaca Paper API ($400,009.00 buying power).'},
-    {ts:new Date(Date.now()-180000).toISOString(),level:'INFO',source:'oms',msg:'[Alpaca Sync] 2 open positions (AAPL, SPY) synced to mobile/web dashboard.'},
-    {ts:new Date(Date.now()-60000).toISOString(),level:'INFO',source:'bot',msg:'[AAPL] Current Close: $319.58 | Z-Score: 2.0307 | Holding state.'}
+  S.logs = [
+    { ts: new Date(Date.now() - 360000).toISOString(), level: 'INFO', source: 'bot', msg: 'Bot initialized. Connected to Alpaca Paper API ($400,009.00 buying power).' },
+    { ts: new Date(Date.now() - 300000).toISOString(), level: 'INFO', source: 'stats', msg: '[GLD/GDX] CADF p-value: 0.0120 (< 0.05) | Hurst: 0.418 | Half-life: 10.2d.' },
+    { ts: new Date(Date.now() - 240000).toISOString(), level: 'INFO', source: 'oms', msg: '[Alpaca Sync] 2 open positions (AAPL, SPY) synced to web/mobile dashboard.' },
+    { ts: new Date(Date.now() - 180000).toISOString(), level: 'INFO', source: 'ai', msg: '[SPY] Base SMA signal=1. RandomForest Meta-Label Confidence: 64.0% (>= 60% threshold).' },
+    { ts: new Date(Date.now() - 120000).toISOString(), level: 'INFO', source: 'bot', msg: '[AAPL] Current Close: $319.58 | Z-Score: 2.0307 | Holding state.' },
+    { ts: new Date(Date.now() - 60000).toISOString(), level: 'WARNING', source: 'risk', msg: '[AAPL] Upper Bollinger Band breached ($320.15). Checking AI Meta-Label filter...' }
   ];
 
-  S.trades=[
-    {id:'ORD-9041',ts:'2026-10-19 14:32:10',ticker:'AAPL',strategy:'Bollinger Mean Reversion',regime:'MEAN_REVERT (H=0.44)',side:'BUY',qty:125,entry:317.40,exit:319.58,z_score:-2.12,ai_conf:0.74,slippage_bps:4.2,pnl:272.50,status:'OPEN',notes:'Synced from Alpaca Paper Positions'},
-    {id:'ORD-9040',ts:'2026-10-19 13:15:42',ticker:'GLD/GDX',strategy:'Engle-Granger Pairs (Chan Ch.7)',regime:'COINTEGRATED (p=0.012)',side:'BUY_SPREAD',qty:200,entry:184.20,exit:186.85,z_score:-2.24,ai_conf:0.82,slippage_bps:5.0,pnl:530.00,status:'CLOSED',notes:'Ornstein-Uhlenbeck half-life target hit'},
-    {id:'ORD-9039',ts:'2026-10-19 11:05:19',ticker:'SPY',strategy:'SMA 20/50 + ML Meta-Label',regime:'TRENDING (H=0.56)',side:'BUY',qty:40,entry:499.10,exit:502.15,z_score:0.85,ai_conf:0.71,slippage_bps:2.5,pnl:122.00,status:'OPEN',notes:'Momentum breakout confirmed by RF'}
+  S.trades = [
+    { id: 'ORD-9041', ts: '2026-10-19 14:32:10', ticker: 'AAPL', strategy: 'Bollinger Mean Reversion', regime: 'MEAN_REVERT (H=0.44)', side: 'BUY', qty: 125, entry: 317.40, exit: 319.58, stop: 313.19, z_score: -2.12, ai_conf: 0.74, slippage_bps: 4.2, pnl: 272.50, status: 'OPEN', notes: 'Synced from Alpaca Paper Positions' },
+    { id: 'ORD-9040', ts: '2026-10-19 13:15:42', ticker: 'GLD/GDX', strategy: 'Engle-Granger Pairs (Chan Ch.7)', regime: 'COINTEGRATED (p=0.012)', side: 'BUY_SPREAD', qty: 200, entry: 184.20, exit: 186.85, stop: 181.50, z_score: -2.24, ai_conf: 0.82, slippage_bps: 5.0, pnl: 530.00, status: 'CLOSED', notes: 'Ornstein-Uhlenbeck half-life target hit' },
+    { id: 'ORD-9039', ts: '2026-10-19 11:05:19', ticker: 'SPY', strategy: 'SMA 20/50 + ML Meta-Label', regime: 'TRENDING (H=0.56)', side: 'BUY', qty: 40, entry: 499.10, exit: 502.15, stop: 494.10, z_score: 0.85, ai_conf: 0.71, slippage_bps: 2.5, pnl: 122.00, status: 'OPEN', notes: 'Momentum breakout confirmed by RF' },
+    { id: 'ORD-9038', ts: '2026-10-18 15:48:00', ticker: 'QQQ', strategy: 'Bollinger Mean Reversion', regime: 'RANDOM_WALK (H=0.50)', side: 'BUY', qty: 60, entry: 432.00, exit: 429.80, stop: 429.50, z_score: -2.05, ai_conf: 0.61, slippage_bps: 6.8, pnl: -132.00, status: 'STOPPED', notes: 'Regime drifted to H=0.50; stop triggered' },
+    { id: 'ORD-9037', ts: '2026-10-18 10:22:11', ticker: 'KO/PEP', strategy: 'Engle-Granger Pairs (Chan Ch.7)', regime: 'NON_STATIONARY (p=0.34)', side: 'VETOED', qty: 0, entry: 61.20, exit: 61.20, stop: 59.80, z_score: 2.40, ai_conf: 0.38, slippage_bps: 0.0, pnl: 0.00, status: 'AI_VETO', notes: 'Chan warning: High correlation != Cointegration' },
+    { id: 'ORD-9036', ts: '2026-10-17 14:10:05', ticker: 'XLE/USO', strategy: 'Ornstein-Uhlenbeck Energy Spread', regime: 'COINTEGRATED (p=0.021)', side: 'SELL_SHORT', qty: 150, entry: 89.40, exit: 86.10, stop: 91.20, z_score: 2.51, ai_conf: 0.79, slippage_bps: 4.5, pnl: 495.00, status: 'CLOSED', notes: 'Half-Kelly allocation f*=1.4x' }
   ];
 
-  S.chanFeed=[
+  S.chanFeed = [
     {
-      id:'CHAN-01',
-      source:'SSRN · Financial Economics Network',
-      url:'https://www.ssrn.com',
-      category:'MEAN_REVERSION',
-      title:'Cointegrated ETF Pairs: GLD vs. GDX & Ornstein-Uhlenbeck Half-Life',
-      chanRef:'Ernest Chan · Chapter 7 (Stationarity & Cointegration)',
-      published:'14 mins ago',
-      metrics:{sharpe:2.34,half_life:'10.2 Days',adf_p:0.012,hurst:0.41,friction_bps:5},
-      summary:'Validates Engle-Granger cointegration on Gold (GLD) vs. Gold Miners (GDX) with a 10.2-day Ornstein-Uhlenbeck mean-reversion half-life.',
-      formula:'dz(t) = -θ(z(t) - μ)dt + dW   |   Half-Life = ln(2) / θ',
-      code:`# Push GLD/GDX parameters directly to live_paper_trader.py\ndash.set_signal("GLD/GDX", "Engle-Granger Pairs", "ACTIVE", {"ou_half_life": 10.2, "adf_p": 0.012})`
+      id: 'CHAN-01',
+      source: 'SSRN · Financial Economics Network',
+      url: 'https://www.ssrn.com',
+      category: 'MEAN_REVERSION',
+      title: 'Cointegrated ETF Pairs: GLD vs. GDX & VanEck Vectors Regime Stability',
+      chanRef: 'Ernest Chan · Chapter 7 (Stationarity & Cointegration)',
+      published: '14 mins ago',
+      metrics: { sharpe: 2.34, half_life: '10.2 Days', adf_p: 0.012, hurst: 0.41, friction_bps: 5 },
+      summary: 'Validates Engle-Granger two-step cointegration on Gold (GLD) and Gold Miners (GDX). Unlike KO/PEP (which correlate daily at 0.4849 but diverge long-term), GLD/GDX maintains a stationary spread with a 10-day Ornstein-Uhlenbeck half-life.',
+      formula: 'dz(t) = -theta(z(t) - mu)dt + dW   |   Half-Life = ln(2) / theta',
+      code: [
+        '# Engle-Granger Cointegration + OU Half-Life (stats_analyzer.py)',
+        'import numpy as np, statsmodels.api as sm',
+        'from statsmodels.tsa.stattools import coint',
+        '',
+        'score, pvalue, _ = coint(df["GLD"], df["GDX"])',
+        'hedge_ratio = sm.OLS(df["GLD"], sm.add_constant(df["GDX"])).fit().params["GDX"]',
+        'spread = df["GLD"] - hedge_ratio * df["GDX"]',
+        '',
+        '# Ornstein-Uhlenbeck Half-Life Calculation',
+        'spread_lag = spread.shift(1).dropna()',
+        'spread_ret = (spread - spread.shift(1)).dropna()',
+        'theta = -sm.OLS(spread_ret, sm.add_constant(spread_lag)).fit().params.iloc[1]',
+        'half_life = np.log(2) / theta  # Enter at |Z| > 2.0, Exit at Z = 0'
+      ].join('\n')
     },
     {
-      id:'CHAN-02',
-      source:'epchan.blogspot.com · Quantitative Trading',
-      url:'https://epchan.blogspot.com',
-      category:'RISK_KELLY',
-      title:'Multi-Strategy Half-Kelly Capital Allocation & 1% Risk Circuit Breaker',
-      chanRef:'Ernest Chan · Chapter 6 (Money & Risk Management)',
-      published:'2 hours ago',
-      metrics:{sharpe:2.65,half_life:'Daily',adf_p:0.001,hurst:0.45,friction_bps:3},
-      summary:'Enforces F* = 0.5 * (C⁻¹M) Half-Kelly leverage alongside your 1% RiskManager share sizing before routing orders to Alpaca.',
-      formula:'Shares = floor((Buying_Power * 0.01) / |Entry - Stop|)',
-      code:`rm = RiskManager(account_balance=buying_power, max_risk_per_trade=0.01)\nshares = rm.calculate_position_size(entry_price, stop_loss)`
+      id: 'CHAN-02',
+      source: 'NBER · National Bureau of Economic Research',
+      url: 'https://www.nber.org',
+      category: 'MOMENTUM',
+      title: 'Post-Earnings Announcement Drift (PEAD) & Institutional Order Flow Persistence',
+      chanRef: 'Ernest Chan · Chapter 7 (Drivers of Momentum)',
+      published: '1 hour ago',
+      metrics: { sharpe: 1.92, half_life: '15.0 Days', adf_p: 0.680, hurst: 0.59, friction_bps: 8 },
+      summary: 'Documents slow information diffusion following quarterly earnings surprises. Stocks opening with >2.5x relative volume and top-decile Standardized Unexpected Earnings (SUE) continue drifting in the surprise direction over 5 to 15 sessions.',
+      formula: 'SUE = (EPS_actual - EPS_est) / sigma(EPS_drift)   |   H > 0.52',
+      code: [
+        '# PEAD Momentum Filter (strategies/pead_momentum.py)',
+        'df["gap_pct"] = (df["open"] - df["close"].shift(1)) / df["close"].shift(1)',
+        'df["vol_ratio"] = df["volume"] / df["volume"].rolling(20).mean()',
+        '',
+        '# Shift by 1 bar to prevent look-ahead bias (Chan Ch. 3)',
+        'df["signal"] = np.where((df["gap_pct"] > 0.03) & (df["vol_ratio"] > 2.5), 1, 0)',
+        'df["position"] = df["signal"].shift(1)'
+      ].join('\n')
+    },
+    {
+      id: 'CHAN-03',
+      source: 'epchan.blogspot.com · Quantitative Trading Blog',
+      url: 'https://epchan.blogspot.com',
+      category: 'RISK_KELLY',
+      title: 'Multi-Strategy Covariance Kelly Allocation & Fat-Tail Drawdown Control',
+      chanRef: 'Ernest Chan · Chapter 6 (Money & Risk Management)',
+      published: '3 hours ago',
+      metrics: { sharpe: 2.65, half_life: 'Daily Rebalance', adf_p: 0.001, hurst: 0.45, friction_bps: 3 },
+      summary: 'Demonstrates why volatility actively drains compounded growth (g = m - s^2/2) and derives optimal multi-strategy portfolio weights via F* = C^-1 * M. Enforces a strict Half-Kelly (0.5 * F*) cap + 1% RiskManager share sizing.',
+      formula: 'F* = C^-1 * M   |   Shares = floor((Buying_Power * 0.01) / |Entry - Stop|)',
+      code: [
+        '# Multi-Strategy Half-Kelly Allocator (risk_manager.py)',
+        'import numpy as np',
+        '',
+        'def calc_half_kelly_weights(returns_df, risk_free_rate=0.04):',
+        '    mean_excess = (returns_df.mean() * 252) - risk_free_rate',
+        '    cov_matrix = returns_df.cov() * 252',
+        '    full_kelly = np.linalg.inv(cov_matrix).dot(mean_excess)',
+        '    return 0.5 * full_kelly  # Half-Kelly mandate'
+      ].join('\n')
+    },
+    {
+      id: 'CHAN-04',
+      source: 'arXiv q-fin · Quantitative Finance (Statistical Finance)',
+      url: 'https://arxiv.org/archive/q-fin',
+      category: 'ML_META',
+      title: 'Triple-Barrier Meta-Labeling on Bollinger Band Mean Reversion Signals',
+      chanRef: 'Ernest Chan Ch. 2 + Lopez de Prado / AI-Quant Framework',
+      published: '5 hours ago',
+      metrics: { sharpe: 2.18, half_life: '4.5 Days', adf_p: 0.008, hurst: 0.43, friction_bps: 8 },
+      summary: 'A primary 2-parameter Bollinger Band model generates directional entries while a secondary Random Forest predicts the probability of hitting the profit barrier before stop-loss.',
+      formula: 'P(Barrier_upper < Barrier_lower | Z_score, Hurst, Vol_20d) >= 0.60',
+      code: [
+        '# AI Meta-Label Veto Check (ai/meta_labeler.py)',
+        'base_signal = bollinger_strategy.generate_signals(bars).iloc[-1]["signal"]',
+        'if base_signal != 0:',
+        '    features = meta_filter.generate_features(bars).iloc[-1]',
+        '    prob = meta_filter.get_confidence_score(features)',
+        '    if prob >= 0.60:',
+        '        ExecutionOMS.submit(symbol, side=base_signal)'
+      ].join('\n')
     }
+  ];
+
+  S.results = [
+    { name: 'GLD/GDX Engle-Granger Pairs (252d)', kind: 'BACKTEST', created_at: new Date(Date.now() - 7200000).toISOString(), metrics: { sharpe_ratio: 2.34, net_return_pct: '28.4%', max_drawdown: '-6.8%', win_rate: '63.2%', friction_bps: 5 } },
+    { name: 'AAPL Bollinger Z-Score + RF Meta-Label', kind: 'GRID_SEARCH', created_at: new Date(Date.now() - 14400000).toISOString(), metrics: { sharpe_ratio: 1.94, net_return_pct: '21.1%', max_drawdown: '-8.4%', win_rate: '58.5%', window_std: '20d / 2.0s' } }
   ];
 }
 initSeedData();
 
-const TABS=[
-  ['overview','1 · Live Graph & Log'],
-  ['alpaca','⚡ Alpaca Live OMS & Editor'],
-  ['chan','2 · Ernest Chan Hub'],
-  ['history','3 · Execution Spreadsheet (.CSV)'],
-  ['strategies','Signals']
+// ============================================================================
+// 3. UI HELPERS & FORMATTERS
+// ============================================================================
+const TABS = [
+  ['overview', '1 · Live Graph & Log'],
+  ['alpaca', '⚡ Alpaca Live OMS & Editor'],
+  ['chan', '2 · Ernest Chan Strategy Hub'],
+  ['history', '3 · Execution Spreadsheet (.CSV)'],
+  ['strategies', 'Active Signals'],
+  ['backtests', 'Backtests & Grid'],
+  ['risk', 'Risk & Kelly']
 ];
 
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const time=t=>t?new Date(t).toLocaleTimeString('en-GB'):'';
-const money=v=>typeof v==='number'?'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
-const fmt=(k,v)=>typeof v==='number'?(/conf|rate|acc/.test(k)&&v<=1?Math.round(v*100)+'%':v.toLocaleString(undefined,{maximumFractionDigits:4})):esc(typeof v==='object'?JSON.stringify(v):v);
-const PILL={ACTIVE:'neon',ONLINE:'neon',FILLED:'neon',OPEN:'azure',DONE:'neon',CLOSED:'neon',WATCHING:'azure',BUY:'neon',LONG:'neon',SELL:'warn',SELL_SHORT:'warn',PAUSED:'warn',HALTED:'alert',ERROR:'alert'};
-const pill=t=>{const c=PILL[String(t).toUpperCase()]||'slate-400';return `<span class="font-mono text-xs px-2 py-0.5 rounded border ${c==='slate-400'?'border-edge text-mute':`border-${c}/50 text-${c} bg-${c}/10`}">${esc(t)}</span>`};
-const empty=m=>`<p class="text-mute text-sm py-4">${m}</p>`;
-const card=(h,b,x='')=>`<section class="bg-panel border border-edge rounded-lg p-4 ${x}">${h?`<h2 class="font-semibold mb-3 flex items-center justify-between">${h}</h2>`:''}${b}</section>`;
-const grid=o=>Object.keys(o||{}).length?`<dl class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">${Object.entries(o).map(([k,v])=>`<div class="bg-ink/60 border border-edge/60 rounded p-2"><dt class="text-mute text-[11px]">${esc(k.replace(/_/g,' '))}</dt><dd class="font-mono text-xs sm:text-sm mt-0.5">${fmt(k,v)}</dd></div>`).join('')}</dl>`:'';
-const stat=(l,v,s='')=>card('',`<div class="text-mute text-xs uppercase tracking-wider">${l}</div><div class="mt-1 font-mono text-xl sm:text-2xl font-semibold">${v}</div><div class="text-mute text-xs mt-1">${esc(s)}</div>`);
-const btn=(label,sub,cmd,tone,args={},conf='')=>`<button data-cmd="${cmd}" data-args='${JSON.stringify(args)}' ${conf?`data-confirm="${esc(conf)}"`:''} class="w-full text-left rounded-md border border-${tone}/50 bg-${tone}/10 hover:bg-${tone}/20 px-3 py-2.5 transition-colors"><div class="font-mono text-xs sm:text-sm text-${tone} font-medium">${label}</div><div class="text-[11px] text-mute mt-0.5">${sub}</div></button>`;
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
 
-const sigCard=s=>card('',`<div class="flex items-start justify-between gap-2"><div><span class="font-mono text-lg font-semibold text-slate-100">${esc(s.ticker)}</span> <span class="text-mute text-xs ml-1 font-mono">${esc(s.strategy)}</span></div>
-  <div class="flex items-center gap-2">${pill(s.enabled===false?'PAUSED':s.status||'—')}<button class="sw" role="switch" aria-checked="${s.enabled!==false}" data-cmd="toggle" data-args='${JSON.stringify({ticker:s.ticker,enabled:s.enabled===false})}'></button></div></div>
-  <div class="mt-3">${grid(s.metrics)}</div>`);
-const sigs=()=>Object.values(S.signals).length?Object.values(S.signals).map(sigCard).join(''):empty('No signals yet.');
+function time(t) {
+  return t ? new Date(t).toLocaleTimeString('en-GB') : '';
+}
 
-let chartObj=null, priceSeries=null, upperSeries=null, lowerSeries=null;
-function mountRealtimeChart(){
+function money(v) {
+  return typeof v === 'number' ? '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+}
+
+function fmt(k, v) {
+  if (typeof v === 'number') {
+    if (/conf|rate|acc/.test(k) && v <= 1) return Math.round(v * 100) + '%';
+    return v.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  }
+  return esc(typeof v === 'object' ? JSON.stringify(v) : v);
+}
+
+const PILL_STYLES = {
+  ACTIVE: 'border-neon/50 text-neon bg-neon/10',
+  ONLINE: 'border-neon/50 text-neon bg-neon/10',
+  FILLED: 'border-neon/50 text-neon bg-neon/10',
+  DONE: 'border-neon/50 text-neon bg-neon/10',
+  CLOSED: 'border-neon/50 text-neon bg-neon/10',
+  PASS: 'border-neon/50 text-neon bg-neon/10',
+  BUY: 'border-neon/50 text-neon bg-neon/10',
+  BUY_SPREAD: 'border-neon/50 text-neon bg-neon/10',
+  LONG: 'border-neon/50 text-neon bg-neon/10',
+  OPEN: 'border-azure/50 text-azure bg-azure/10',
+  WATCHING: 'border-azure/50 text-azure bg-azure/10',
+  RUNNING: 'border-azure/50 text-azure bg-azure/10',
+  SELL: 'border-warn/50 text-warn bg-warn/10',
+  SELL_SHORT: 'border-warn/50 text-warn bg-warn/10',
+  PENDING: 'border-warn/50 text-warn bg-warn/10',
+  PAUSED: 'border-warn/50 text-warn bg-warn/10',
+  AI_VETO: 'border-warn/50 text-warn bg-warn/10',
+  STOPPED: 'border-alert/50 text-alert bg-alert/10',
+  HALTED: 'border-alert/50 text-alert bg-alert/10',
+  OFFLINE: 'border-alert/50 text-alert bg-alert/10',
+  ERROR: 'border-alert/50 text-alert bg-alert/10'
+};
+
+function pill(t) {
+  const key = String(t || '').toUpperCase();
+  const cls = PILL_STYLES[key] || 'border-edge text-mute';
+  return '<span class="font-mono text-xs px-2 py-0.5 rounded border ' + cls + '">' + esc(t) + '</span>';
+}
+
+function empty(m) {
+  return '<p class="text-mute text-sm py-4">' + esc(m) + '</p>';
+}
+
+function card(h, b, x) {
+  const headerHtml = h ? '<h2 class="font-semibold mb-3 flex items-center justify-between">' + h + '</h2>' : '';
+  return '<section class="bg-panel border border-edge rounded-lg p-4 ' + (x || '') + '">' + headerHtml + b + '</section>';
+}
+
+function grid(o) {
+  const entries = Object.entries(o || {});
+  if (!entries.length) return '';
+  const items = entries.map(function(pair) {
+    const k = pair[0], v = pair[1];
+    return '<div class="bg-ink/60 border border-edge/60 rounded p-2.5">' +
+      '<dt class="text-mute text-[11px]">' + esc(k.replace(/_/g, ' ')) + '</dt>' +
+      '<dd class="font-mono text-xs sm:text-sm mt-0.5">' + fmt(k, v) + '</dd>' +
+    '</div>';
+  }).join('');
+  return '<dl class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">' + items + '</dl>';
+}
+
+function stat(l, v, s) {
+  return card('', '<div class="text-mute text-xs uppercase tracking-wider">' + esc(l) + '</div>' +
+    '<div class="mt-1 font-mono text-xl sm:text-2xl font-semibold">' + v + '</div>' +
+    '<div class="text-mute text-xs mt-1">' + esc(s || '') + '</div>');
+}
+
+const BTN_TONES = {
+  neon: 'border-neon/50 bg-neon/10 hover:bg-neon/20 text-neon',
+  azure: 'border-azure/50 bg-azure/10 hover:bg-azure/20 text-azure',
+  warn: 'border-warn/50 bg-warn/10 hover:bg-warn/20 text-warn',
+  alert: 'border-alert/50 bg-alert/10 hover:bg-alert/20 text-alert'
+};
+
+function btn(label, sub, cmd, tone, args, conf) {
+  const toneCls = BTN_TONES[tone] || BTN_TONES.azure;
+  const confAttr = conf ? ' data-confirm="' + esc(conf) + '"' : '';
+  const argsJson = esc(JSON.stringify(args || {}));
+  return '<button data-cmd="' + esc(cmd) + '" data-args="' + argsJson + '"' + confAttr +
+    ' class="w-full text-left rounded-md border px-3 py-2.5 transition-colors ' + toneCls + '">' +
+    '<div class="font-mono text-xs sm:text-sm font-medium">' + esc(label) + '</div>' +
+    '<div class="text-[11px] text-mute mt-0.5">' + esc(sub) + '</div>' +
+  '</button>';
+}
+
+function sigCard(s) {
+  const isEnabled = s.enabled !== false;
+  const toggleArgs = esc(JSON.stringify({ ticker: s.ticker, enabled: !isEnabled }));
+  return card('',
+    '<div class="flex items-start justify-between gap-2">' +
+      '<div>' +
+        '<span class="font-mono text-lg font-semibold text-slate-100">' + esc(s.ticker) + '</span> ' +
+        '<span class="text-mute text-xs ml-1 font-mono">' + esc(s.strategy) + '</span>' +
+      '</div>' +
+      '<div class="flex items-center gap-2">' +
+        pill(isEnabled ? (s.status || '—') : 'PAUSED') +
+        '<button class="sw" role="switch" aria-checked="' + isEnabled + '" data-cmd="toggle" data-args="' + toggleArgs + '"></button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="mt-3">' + grid(s.metrics) + '</div>'
+  );
+}
+
+function sigs() {
+  const list = Object.values(S.signals);
+  return list.length ? list.map(sigCard).join('') : empty('No signals configured.');
+}
+
+function renderLogLines() {
+  if (!S.logs.length) return empty('No log lines yet.');
+  return S.logs.map(function(l) {
+    const lvl = l.level || 'INFO';
+    const color = (lvl === 'ERROR' || lvl === 'CRITICAL') ? 'text-alert' : (lvl === 'WARNING' ? 'text-warn' : 'text-neon');
+    return '<div>' +
+      '<span class="text-mute">' + time(l.ts) + '</span> ' +
+      '<span class="' + color + '">' + esc(lvl.padEnd(7)) + '</span> ' +
+      '<span class="text-azure">[' + esc(l.source || 'bot') + ']</span> ' +
+      esc(l.msg) +
+    '</div>';
+  }).join('');
+}
+
+// ============================================================================
+// 4. INTERACTIVE CHART ENGINE (Lightweight Charts)
+// ============================================================================
+let chartObj = null, priceSeries = null, upperSeries = null, lowerSeries = null;
+
+function mountRealtimeChart() {
   const container = document.getElementById('tvchart');
-  if(!container || typeof LightweightCharts === 'undefined') return;
-  container.innerHTML = '';
-  chartObj = LightweightCharts.createChart(container, {
-    width: container.clientWidth,
-    height: 310,
-    layout: { background: { type: 'solid', color: '#0b1220' }, textColor: '#8b9ab5', fontFamily: 'IBM Plex Mono' },
-    grid: { vertLines: { color: '#162238' }, horzLines: { color: '#162238' } },
-    rightPriceScale: { borderColor: '#1f2c44' },
-    timeScale: { borderColor: '#1f2c44', timeVisible: true, secondsVisible: true }
-  });
-  priceSeries = chartObj.addAreaSeries({ lineColor: '#39ff88', topColor: 'rgba(57, 255, 136, 0.20)', bottomColor: 'rgba(57, 255, 136, 0.01)', lineWidth: 2 });
-  upperSeries = chartObj.addLineSeries({ color: 'rgba(77, 163, 255, 0.55)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed });
-  lowerSeries = chartObj.addLineSeries({ color: 'rgba(255, 179, 71, 0.55)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed });
-  updateChartSeriesData();
+  if (!container) return;
+  if (typeof LightweightCharts === 'undefined') {
+    container.innerHTML = '<div class="p-6 text-center text-mute font-mono text-xs">Chart library loading or blocked by browser tracking prevention.</div>';
+    return;
+  }
+  try {
+    container.innerHTML = '';
+    chartObj = LightweightCharts.createChart(container, {
+      width: container.clientWidth || 600,
+      height: 320,
+      layout: { background: { type: 'solid', color: '#0b1220' }, textColor: '#8b9ab5', fontFamily: 'IBM Plex Mono' },
+      grid: { vertLines: { color: '#162238' }, horzLines: { color: '#162238' } },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      rightPriceScale: { borderColor: '#1f2c44' },
+      timeScale: { borderColor: '#1f2c44', timeVisible: true, secondsVisible: true }
+    });
+
+    priceSeries = chartObj.addAreaSeries({
+      lineColor: '#39ff88',
+      topColor: 'rgba(57, 255, 136, 0.22)',
+      bottomColor: 'rgba(57, 255, 136, 0.01)',
+      lineWidth: 2,
+      title: S.chartTicker
+    });
+
+    upperSeries = chartObj.addLineSeries({
+      color: 'rgba(77, 163, 255, 0.55)',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      title: '+2s Upper'
+    });
+
+    lowerSeries = chartObj.addLineSeries({
+      color: 'rgba(255, 179, 71, 0.55)',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      title: '-2s Lower'
+    });
+
+    updateChartSeriesData();
+  } catch (err) {
+    console.error('Chart mount error:', err);
+  }
 }
 
-function updateChartSeriesData(){
-  if(!priceSeries) return;
-  const key = S.chartTicker === 'GLD/GDX' ? 'GLD_GDX' : S.chartTicker;
-  const data = S.ticks[key] || S.ticks.AAPL;
-  priceSeries.setData(data);
-  const upper = [], lower = [];
-  const bandOffset = key === 'GLD_GDX' ? 0.22 : 1.85;
-  data.forEach((pt, idx) => {
-    const slice = data.slice(Math.max(0, idx-19), idx+1);
-    const mean = slice.reduce((a,b)=>a+b.value,0)/slice.length;
-    upper.push({time: pt.time, value: Number((mean + bandOffset).toFixed(3))});
-    lower.push({time: pt.time, value: Number((mean - bandOffset).toFixed(3))});
-  });
-  upperSeries.setData(upper);
-  lowerSeries.setData(lower);
+window.addEventListener('resize', function() {
+  const container = document.getElementById('tvchart');
+  if (chartObj && container) {
+    chartObj.applyOptions({ width: container.clientWidth });
+  }
+});
+
+function updateChartSeriesData() {
+  if (!priceSeries) return;
+  try {
+    const key = S.chartTicker === 'GLD/GDX' ? 'GLD_GDX' : S.chartTicker;
+    const data = S.ticks[key] || S.ticks.AAPL;
+    priceSeries.setData(data);
+
+    const upper = [], lower = [];
+    const bandOffset = key === 'GLD_GDX' ? 0.22 : (key === 'AAPL' ? 1.85 : 2.40);
+    data.forEach(function(pt, idx) {
+      const slice = data.slice(Math.max(0, idx - 19), idx + 1);
+      const mean = slice.reduce(function(a, b) { return a + b.value; }, 0) / slice.length;
+      upper.push({ time: pt.time, value: Number((mean + bandOffset).toFixed(3)) });
+      lower.push({ time: pt.time, value: Number((mean - bandOffset).toFixed(3)) });
+    });
+    upperSeries.setData(upper);
+    lowerSeries.setData(lower);
+
+    if (data.length > 30 && typeof priceSeries.setMarkers === 'function') {
+      const m1 = data[data.length - 28];
+      const m2 = data[data.length - 9];
+      priceSeries.setMarkers([
+        { time: m1.time, position: 'belowBar', color: '#39ff88', shape: 'arrowUp', text: 'BUY (Z < -2.0)' },
+        { time: m2.time, position: 'aboveBar', color: '#ff5c7a', shape: 'arrowDown', text: 'SHORT (Z > +2.0)' }
+      ]);
+    }
+  } catch (err) {
+    console.warn('Chart update warning:', err);
+  }
 }
 
-const V={
-  overview(){
-    const a=S.kv.account||{}, n=S.kv.node||{};
+// ============================================================================
+// 5. DASHBOARD VIEWS
+// ============================================================================
+const V = {
+  overview: function() {
+    const a = S.kv.account || {};
+    const n = S.kv.node || {};
     const key = S.chartTicker === 'GLD/GDX' ? 'GLD_GDX' : S.chartTicker;
     const arr = S.ticks[key] || S.ticks.AAPL;
-    const lastPrice = arr.length ? arr[arr.length-1].value : 0;
+    const lastPrice = arr.length ? arr[arr.length - 1].value : 0;
+    const fmtPx = S.chartTicker === 'GLD/GDX' ? lastPrice.toFixed(3) : '$' + lastPrice.toFixed(2);
 
-    return `
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      ${stat('Alpaca Paper Status', pill(a.status||'ACTIVE'), 'Two-Way Live Broker Sync')}
-      ${stat('Buying Power', `<span class="text-azure">${money(a.buying_power)}</span>`, `Equity: ${money(a.equity||401851.50)}`)}
-      ${stat('Daily P&L', `<span class="${(a.daily_pnl||0)>=0?'text-neon':'text-alert'}">${(a.daily_pnl\vert{}\vert{}0)>=0?'+':''}${money(a.daily_pnl||1842.50)}</span>`, `${a.daily_pnl_pct||0.46}% vs Last Close`)}
-      ${stat('Cloud VM Daemon', pill(n.status||'Online'), n.host||'GCP VM · tmux')}
-    </div>
+    const tickerBtns = ['AAPL', 'SPY', 'GLD/GDX'].map(function(t) {
+      const active = S.chartTicker === t ? 'border-neon bg-neon/15 text-neon' : 'border-edge text-mute hover:text-slate-200';
+      return '<button data-ticker="' + t + '" class="font-mono text-xs px-2.5 py-1 rounded border ' + active + '">' + t + '</button>';
+    }).join('');
 
-    <div class="grid lg:grid-cols-12 gap-5 mt-5">
-      <div class="lg:col-span-7 bg-panel border border-edge rounded-lg p-3 sm:p-4 flex flex-col justify-between">
-        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-edge">
-          <div class="flex items-center gap-1.5">
-            ${['AAPL','SPY','GLD/GDX'].map(t=>`<button data-ticker="${t}" class="font-mono text-xs px-2.5 py-1 rounded border ${S.chartTicker===t?'border-neon bg-neon/15 text-neon':'border-edge text-mute'}">${t}</button>`).join('')}
-          </div>
-          <div class="font-mono text-xs">
-            <span class="text-mute">Px: <strong id="livePx" class="text-neon text-sm">${S.chartTicker==='GLD/GDX'?lastPrice.toFixed(3):'$'+lastPrice.toFixed(2)}</strong></span>
-          </div>
-        </div>
-        <div id="tvchart" class="w-full my-2 rounded overflow-hidden border border-edge/60 bg-ink"></div>
-        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-edge text-xs font-mono">
-          <a href="#alpaca" class="text-neon hover:underline">⚡ Open Alpaca Order Ticket & Live Parameter Editor →</a>
-          <button id="simExecBtn" class="px-2.5 py-1 rounded bg-azure/15 border border-azure/50 text-azure">+ Quick Test Order</button>
-        </div>
-      </div>
+    const pnlVal = a.daily_pnl !== undefined ? a.daily_pnl : 1842.50;
+    const pnlSign = pnlVal >= 0 ? '+' : '';
+    const pnlColor = pnlVal >= 0 ? 'text-neon' : 'text-alert';
 
-      <div class="lg:col-span-5 bg-panel border border-edge rounded-lg p-3 sm:p-4 flex flex-col justify-between">
-        <div class="flex items-center justify-between pb-3 border-b border-edge">
-          <span class="font-mono text-xs sm:text-sm font-semibold text-neon">tail -f ~/logs/trading_bot.log</span>
-          <span class="font-mono text-xs text-mute" id="logCount">${S.logs.length} lines</span>
-        </div>
-        <div id="logbox" class="scroll h-[310px] overflow-y-auto font-mono text-xs leading-6 bg-ink/90 border border-edge/70 rounded p-3 my-2 space-y-1">
-          ${renderLogLines()}
-        </div>
-        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-edge">
-          ${btn('/ai_veto','RF Check','ai_veto','azure')}
-          ${btn('!cancelall','Kill Switch','cancelall','alert',{},'Liquidate ALL Alpaca positions and pause bot?')}
-          ${btn('Resume','Unpause','resume','neon')}
-        </div>
-      </div>
-    </div>
+    return '<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">' +
+      stat('Alpaca Paper Status', pill(a.status || 'ACTIVE'), 'Two-Way Live Broker Sync') +
+      stat('Simulated Buying Power', '<span class="text-azure">' + money(a.buying_power || 400009) + '</span>', 'Equity: ' + money(a.equity || 401851.50)) +
+      stat('Daily P&L', '<span class="' + pnlColor + '">' + pnlSign + money(pnlVal) + '</span>', 'Half-Kelly Leverage: ' + (a.kelly_leverage || 1.35) + 'x') +
+      stat('Cloud VM Daemon', pill(n.status || 'Online'), n.host || 'GCP VM · tmux') +
+    '</div>' +
 
-    <div class="mt-6">
-      <h2 class="font-semibold text-base mb-3">Active Strategy Monitor (Tap toggle to pause/resume on VM)</h2>
-      <div class="grid md:grid-cols-3 gap-4">${sigs()}</div>
-    </div>`;
+    '<div class="grid lg:grid-cols-12 gap-5 mt-5">' +
+      '<div class="lg:col-span-7 bg-panel border border-edge rounded-lg p-3 sm:p-4 flex flex-col justify-between">' +
+        '<div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-edge">' +
+          '<div class="flex items-center gap-1.5">' +
+            '<span class="font-mono font-semibold text-xs text-slate-100 mr-1">FEED:</span>' +
+            tickerBtns +
+          '</div>' +
+          '<div class="flex items-center gap-3 font-mono text-xs">' +
+            '<span class="text-mute">Px: <strong id="livePx" class="text-neon text-sm">' + fmtPx + '</strong></span>' +
+            '<span class="text-azure hidden sm:inline">--- ±2.0s Bollinger</span>' +
+          '</div>' +
+        '</div>' +
+        '<div id="tvchart" class="w-full my-2 rounded overflow-hidden border border-edge/60 bg-ink min-h-[320px]"></div>' +
+        '<div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-edge text-xs font-mono">' +
+          '<a href="#alpaca" class="text-neon hover:underline">⚡ Open Alpaca Order Ticket & Parameter Editor →</a>' +
+          '<button id="simExecBtn" class="px-2.5 py-1 rounded bg-azure/15 border border-azure/50 text-azure hover:bg-azure/25">+ Simulate Live Order Fill</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="lg:col-span-5 bg-panel border border-edge rounded-lg p-3 sm:p-4 flex flex-col justify-between">' +
+        '<div class="flex items-center justify-between pb-3 border-b border-edge">' +
+          '<div class="flex items-center gap-2">' +
+            '<span class="w-2 h-2 rounded-full bg-neon pulse"></span>' +
+            '<span class="font-mono text-xs sm:text-sm font-semibold text-neon">tail -f ~/logs/trading_bot.log</span>' +
+          '</div>' +
+          '<span class="font-mono text-xs text-mute" id="logCount">' + S.logs.length + ' lines</span>' +
+        '</div>' +
+        '<div id="logbox" class="scroll h-[320px] overflow-y-auto font-mono text-xs leading-6 bg-ink/90 border border-edge/70 rounded p-3 my-2 space-y-1">' +
+          renderLogLines() +
+        '</div>' +
+        '<div class="grid grid-cols-3 gap-2 pt-2 border-t border-edge">' +
+          btn('/ai_veto', 'RF Check', 'ai_veto', 'azure') +
+          btn('!cancelall', 'Kill Switch', 'cancelall', 'alert', {}, 'Liquidate ALL Alpaca positions and pause bot?') +
+          btn('Resume', 'Unpause', 'resume', 'neon') +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="mt-6">' +
+      '<div class="flex items-center justify-between mb-3">' +
+        '<h2 class="font-semibold text-base">Active Strategy Monitor (Tap toggle to pause/resume on VM)</h2>' +
+        '<a href="#history" class="font-mono text-xs text-azure hover:underline">View Full Execution Spreadsheet →</a>' +
+      '</div>' +
+      '<div class="grid md:grid-cols-3 gap-4">' + sigs() + '</div>' +
+    '</div>';
   },
 
-  // NEW TAB: OFFICIAL ALPACA LIVE OMS + PHONE/LAPTOP PARAMETER EDITOR
-  alpaca(){
-    const a = S.kv.account || {buying_power:400009, equity:401851.50};
-    const r = S.kv.risk || {max_risk_per_trade:0.01, max_position_pct:0.05, max_daily_drawdown:0.03, bb_window:20, z_entry_threshold:2.0, stop_loss_pct:0.02, poll_seconds:30};
+  alpaca: function() {
+    const a = S.kv.account || { buying_power: 400009, equity: 401851.50 };
+    const r = S.kv.risk || { max_risk_per_trade: 0.01, max_position_pct: 0.05, max_daily_drawdown: 0.03, bb_window: 20, z_entry_threshold: 2.0, stop_loss_pct: 0.02, poll_seconds: 30 };
     const positions = (S.kv.alpaca_positions && S.kv.alpaca_positions.positions) || [];
     const orders = (S.kv.alpaca_orders && S.kv.alpaca_orders.orders) || [];
     const tk = S.orderTicket;
-    const riskPerShare = Math.abs((Number(tk.entry_price)||0) - (Number(tk.stop_loss)||0));
-    const autoShares = riskPerShare > 0 ? Math.floor(((a.buying_power||400000) * (r.max_risk_per_trade||0.01)) / riskPerShare) : 0;
+    const riskPerShare = Math.abs((Number(tk.entry_price) || 0) - (Number(tk.stop_loss) || 0));
+    const autoShares = riskPerShare > 0 ? Math.floor(((a.buying_power || 400000) * (r.max_risk_per_trade || 0.01)) / riskPerShare) : 0;
 
-    return `
-    <div class="grid lg:grid-cols-12 gap-6">
-      <!-- Left 5 Cols: Direct Alpaca Order Ticket (Phone & Laptop Friendly) -->
-      <div class="lg:col-span-5 space-y-5">
-        ${card('⚡ Official Alpaca Order Ticket (Live Paper)', `
-          <form id="alpacaOrderForm" class="space-y-3 font-mono text-xs">
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-mute block mb-1">Ticker Symbol</label>
-                <input id="ordSym" type="text" value="${esc(tk.symbol)}" class="w-full bg-ink border border-edge rounded px-3 py-2 text-slate-100 uppercase font-semibold">
-              </div>
-              <div>
-                <label class="text-mute block mb-1">Action Side</label>
-                <select id="ordSide" class="w-full bg-ink border border-edge rounded px-3 py-2 text-slate-100">
-                  <option value="BUY" ${tk.side==='BUY'?'selected':''}>BUY (Long)</option>
-                  <option value="SELL" ${tk.side==='SELL'?'selected':''}>SELL (Short / Exit)</option>
-                </select>
-              </div>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="text-mute block mb-1">Est. Entry ($)</label>
-                <input id="ordEntry" type="number" step="0.01" value="${tk.entry_price}" class="w-full bg-ink border border-edge rounded px-2.5 py-2 text-slate-100">
-              </div>
-              <div>
-                <label class="text-mute block mb-1">Stop Loss ($)</label>
-                <input id="ordStop" type="number" step="0.01" value="${tk.stop_loss}" class="w-full bg-ink border border-edge rounded px-2.5 py-2 text-slate-100">
-              </div>
-              <div>
-                <label class="text-mute block mb-1">Shares (0=Auto)</label>
-                <input id="ordQty" type="number" value="${tk.qty}" placeholder="${autoShares}" class="w-full bg-ink border border-edge rounded px-2.5 py-2 text-neon font-semibold">
-              </div>
-            </div>
-            <div class="bg-ink/90 border border-edge rounded p-2.5 text-[11px] space-y-1">
-              <div class="flex justify-between"><span class="text-mute">1% Risk Manager Auto-Size:</span><strong class="text-neon">${autoShares} shares</strong></div> <div class="flex justify-between"><span class="text-mute">Risk Per Share:</span><span>$${riskPerShare.toFixed(2)}</span></div>
-              <div class="flex justify-between"><span class="text-mute">Max Capital at Risk (1%):</span><span class="text-azure">${money((a.buying_power||400000)*(r.max_risk_per_trade||0.01))}</span></div>
-            </div>
-            <button type="submit" class="w-full py-2.5 rounded bg-neon/20 border border-neon text-neon font-semibold hover:bg-neon/30 transition">🚀 Route Order to Alpaca Paper API</button>
-          </form>
-        `)}
+    const posRows = positions.map(function(p) {
+      const plColor = p.unrealized_pl >= 0 ? 'text-neon' : 'text-alert';
+      const plSign = p.unrealized_pl >= 0 ? '+' : '';
+      return '<tr>' +
+        '<td class="font-bold text-slate-100">' + esc(p.symbol) + '</td>' +
+        '<td>' + pill(p.side) + '</td>' +
+        '<td class="text-right">' + p.qty + '</td>' +
+        '<td class="text-right">$' + Number(p.avg_entry_price).toFixed(2) + '</td>' +
+        '<td class="text-right">$' + Number(p.current_price).toFixed(2) + '</td>' +
+        '<td class="text-right">' + money(p.market_value) + '</td>' +
+        '<td class="text-right font-semibold ' + plColor + '">' + plSign + '$' + Number(p.unrealized_pl).toFixed(2) + ' (' + p.unrealized_plpc + '%)</td>' +
+        '<td><button data-closepos="' + esc(p.symbol) + '" class="px-2 py-0.5 rounded bg-alert/20 border border-alert/50 text-alert text-[11px] hover:bg-alert/30">Liquidate</button></td>' +
+      '</tr>';
+    }).join('');
 
-        <!-- Live Sandbox & Risk Parameter Editor (Edit from Phone or Laptop) -->
-        ${card('🛠️ Live trading-sandbox Parameter Editor', `
-          <form id="paramEditForm" class="space-y-3 font-mono text-xs">
-            <p class="text-mute text-[11px] font-sans">Edit parameters below from your phone or laptop. Saving pushes changes straight into <code>live_paper_trader.py</code> on your GCP VM without restarting tmux.</p>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-mute block mb-1">Z-Score Entry (σ)</label>
-                <input id="pZ" type="number" step="0.1" value="${r.z_entry_threshold??2.0}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
-              </div>
-              <div>
-                <label class="text-mute block mb-1">Bollinger Window (d)</label>
-                <input id="pWin" type="number" value="${r.bb_window??20}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
-              </div>
-              <div>
-                <label class="text-mute block mb-1">Max Risk / Trade</label>
-                <input id="pRisk" type="number" step="0.005" value="${r.max_risk_per_trade??0.01}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
-              </div>
-              <div>
-                <label class="text-mute block mb-1">Stop-Loss Margin</label>
-                <input id="pStop" type="number" step="0.005" value="${r.stop_loss_pct??0.02}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
-              </div>
-              <div>
-                <label class="text-mute block mb-1">Daily Drawdown Breaker</label>
-                <input id="pDD" type="number" step="0.01" value="${r.max_daily_drawdown??0.03}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
-              </div>
-              <div>
-                <label class="text-mute block mb-1">VM Poll Interval (sec)</label>
-                <input id="pPoll" type="number" value="${r.poll_seconds??30}" class="w-full bg-ink border border-edge rounded px-3 py-1.5">
-              </div>
-            </div>
-            <button type="submit" class="w-full py-2 rounded bg-azure/20 border border-azure text-azure font-semibold hover:bg-azure/30 transition">💾 Save & Push Parameters to Cloud VM</button>
-          </form>
-        `)}
-      </div>
+    const ordRows = orders.map(function(o) {
+      const canCancel = /NEW|PENDING|ACCEPTED/.test(String(o.status).toUpperCase());
+      const actionHtml = canCancel
+        ? '<button data-cancelord="' + esc(o.full_id || o.id) + '" class="px-2 py-0.5 rounded border border-warn text-warn text-[11px]">Cancel</button>'
+        : '<span class="text-mute text-[11px]">—</span>';
+      return '<tr>' +
+        '<td class="text-azure">' + esc(o.id) + '</td>' +
+        '<td class="text-mute">' + time(o.created_at) + '</td>' +
+        '<td class="font-semibold">' + esc(o.symbol) + '</td>' +
+        '<td>' + pill(o.side) + '</td>' +
+        '<td class="text-right">' + o.qty + '</td>' +
+        '<td class="text-right">' + (o.filled_avg_price ? '$' + Number(o.filled_avg_price).toFixed(2) : '—') + '</td>' +
+        '<td>' + pill(o.status) + '</td>' +
+        '<td>' + actionHtml + '</td>' +
+      '</tr>';
+    }).join('');
 
-      <!-- Right 7 Cols: Live Alpaca Open Positions & Recent Broker Orders -->
-      <div class="lg:col-span-7 space-y-5">
-        ${card(`📊 Open Alpaca Positions (${positions.length}) <button data-cmd="sync_alpaca" class="text-xs font-mono text-azure hover:underline">↻ Refresh</button>`, `
-          ${positions.length ? `
-          <div class="overflow-x-auto scroll">
-            <table class="excel-table">
-              <thead>
-                <tr>
-                  <th>Symbol</th><th>Side</th><th>Qty</th><th>Avg Entry</th><th>Current Px</th><th>Market Val</th><th>Unrealized P&L</th><th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${positions.map(p=>`
-                  <tr>
-                    <td class="font-bold text-slate-100">${esc(p.symbol)}</td>
-                    <td>${pill(p.side)}</td>
-                    <td class="text-right">${p.qty}</td>
-                    <td class="text-right">$${Number(p.avg_entry_price).toFixed(2)}</td> <td class="text-right">$${Number(p.current_price).toFixed(2)}</td>
-                    <td class="text-right">${money(p.market_value)}</td>
-                    <td class="text-right font-semibold ${p.unrealized_pl>=0?'text-neon':'text-alert'}">${p.unrealized_pl>=0?'+':''}$${Number(p.unrealized_pl).toFixed(2)} (${p.unrealized_plpc}%)</td>
-                    <td><button data-closepos="${esc(p.symbol)}" class="px-2 py-0.5 rounded bg-alert/20 border border-alert/50 text-alert text-[11px] hover:bg-alert/30">Liquidate</button></td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>` : empty('No open positions in Alpaca Paper account.')}
-        `)}
+    return '<div class="grid lg:grid-cols-12 gap-6">' +
+      '<div class="lg:col-span-5 space-y-5">' +
+        card('⚡ Official Alpaca Order Ticket (Live Paper)',
+          '<form id="alpacaOrderForm" class="space-y-3 font-mono text-xs">' +
+            '<div class="grid grid-cols-2 gap-3">' +
+              '<div>' +
+                '<label class="text-mute block mb-1">Ticker Symbol</label>' +
+                '<input id="ordSym" type="text" value="' + esc(tk.symbol) + '" class="w-full bg-ink border border-edge rounded px-3 py-2 text-slate-100 uppercase font-semibold">' +
+              '</div>' +
+              '<div>' +
+                '<label class="text-mute block mb-1">Action Side</label>' +
+                '<select id="ordSide" class="w-full bg-ink border border-edge rounded px-3 py-2 text-slate-100">' +
+                  '<option value="BUY"' + (tk.side === 'BUY' ? ' selected' : '') + '>BUY (Long)</option>' +
+                  '<option value="SELL"' + (tk.side === 'SELL' ? ' selected' : '') + '>SELL (Short / Exit)</option>' +
+                '</select>' +
+              '</div>' +
+            '</div>' +
+            '<div class="grid grid-cols-3 gap-2">' +
+              '<div>' +
+                '<label class="text-mute block mb-1">Est. Entry ($)</label>' +
+                '<input id="ordEntry" type="number" step="0.01" value="' + tk.entry_price + '" class="w-full bg-ink border border-edge rounded px-2.5 py-2 text-slate-100">' +
+              '</div>' +
+              '<div>' +
+                '<label class="text-mute block mb-1">Stop Loss ($)</label>' +
+                '<input id="ordStop" type="number" step="0.01" value="' + tk.stop_loss + '" class="w-full bg-ink border border-edge rounded px-2.5 py-2 text-slate-100">' +
+              '</div>' +
+              '<div>' +
+                '<label class="text-mute block mb-1">Shares (0=Auto)</label>' +
+                '<input id="ordQty" type="number" value="' + tk.qty + '" placeholder="' + autoShares + '" class="w-full bg-ink border border-edge rounded px-2.5 py-2 text-neon font-semibold">' +
+              '</div>' +
+            '</div>' +
+            '<div class="bg-ink/90 border border-edge rounded p-2.5 text-[11px] space-y-1">' +
+              '<div class="flex justify-between"><span class="text-mute">1% Risk Manager Auto-Size:</span><strong class="text-neon">' + autoShares + ' shares</strong></div>' +
+              '<div class="flex justify-between"><span class="text-mute">Risk Per Share:</span><span>$' + riskPerShare.toFixed(2) + '</span></div>' +
+              '<div class="flex justify-between"><span class="text-mute">Max Capital at Risk (1%):</span><span class="text-azure">' + money((a.buying_power || 400000) * (r.max_risk_per_trade || 0.01)) + '</span></div>' +
+            '</div>' +
+            '<button type="submit" class="w-full py-2.5 rounded bg-neon/20 border border-neon text-neon font-semibold hover:bg-neon/30 transition">🚀 Route Order to Alpaca Paper API</button>' +
+          '</form>'
+        ) +
+        card('🛠️ Live trading-sandbox Parameter Editor',
+          '<form id="paramEditForm" class="space-y-3 font-mono text-xs">' +
+            '<p class="text-mute text-[11px] font-sans">Edit parameters below from your phone or laptop. Saving pushes changes straight into <code>live_paper_trader.py</code> on your GCP VM.</p>' +
+            '<div class="grid grid-cols-2 gap-3">' +
+              '<div><label class="text-mute block mb-1">Z-Score Entry (s)</label><input id="pZ" type="number" step="0.1" value="' + (r.z_entry_threshold ?? 2.0) + '" class="w-full bg-ink border border-edge rounded px-3 py-1.5"></div>' +
+              '<div><label class="text-mute block mb-1">Bollinger Window (d)</label><input id="pWin" type="number" value="' + (r.bb_window ?? 20) + '" class="w-full bg-ink border border-edge rounded px-3 py-1.5"></div>' +
+              '<div><label class="text-mute block mb-1">Max Risk / Trade</label><input id="pRisk" type="number" step="0.005" value="' + (r.max_risk_per_trade ?? 0.01) + '" class="w-full bg-ink border border-edge rounded px-3 py-1.5"></div>' +
+              '<div><label class="text-mute block mb-1">Stop-Loss Margin</label><input id="pStop" type="number" step="0.005" value="' + (r.stop_loss_pct ?? 0.02) + '" class="w-full bg-ink border border-edge rounded px-3 py-1.5"></div>' +
+              '<div><label class="text-mute block mb-1">Daily Drawdown Cap</label><input id="pDD" type="number" step="0.01" value="' + (r.max_daily_drawdown ?? 0.03) + '" class="w-full bg-ink border border-edge rounded px-3 py-1.5"></div>' +
+              '<div><label class="text-mute block mb-1">VM Poll Interval (s)</label><input id="pPoll" type="number" value="' + (r.poll_seconds ?? 30) + '" class="w-full bg-ink border border-edge rounded px-3 py-1.5"></div>' +
+            '</div>' +
+            '<button type="submit" class="w-full py-2 rounded bg-azure/20 border border-azure text-azure font-semibold hover:bg-azure/30 transition">💾 Save & Push Parameters to Cloud VM</button>' +
+          '</form>'
+        ) +
+      '</div>' +
 
-        ${card(`🧾 Recent Official Alpaca Orders (${orders.length})`, `
-          ${orders.length ? `
-          <div class="overflow-x-auto scroll">
-            <table class="excel-table">
-              <thead>
-                <tr>
-                  <th>Order ID</th><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Fill Px</th><th>Status</th><th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${orders.map(o=>`
-                  <tr>
-                    <td class="text-azure">${esc(o.id)}</td>
-                    <td class="text-mute">${time(o.created_at)}</td>
-                    <td class="font-semibold">${esc(o.symbol)}</td>
-                    <td>${pill(o.side)}</td>
-                    <td class="text-right">${o.qty}</td>
-                    <td class="text-right">${o.filled_avg_price?'$'+Number(o.filled_avg_price).toFixed(2):'—'}</td>
-                    <td>${pill(o.status)}</td>
-                    <td>${/NEW|PENDING|ACCEPTED/.test(String(o.status).toUpperCase()) ? `<button data-cancelord="${esc(o.full_id||o.id)}" class="px-2 py-0.5 rounded border border-warn text-warn text-[11px]">Cancel</button>` : '<span class="text-mute text-[11px]">—</span>'}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>` : empty('No recent orders found.')}
-        `)}
-      </div>
-    </div>`;
+      '<div class="lg:col-span-7 space-y-5">' +
+        card('📊 Open Alpaca Positions (' + positions.length + ') <button data-cmd="sync_alpaca" class="text-xs font-mono text-azure hover:underline">↻ Refresh</button>',
+          positions.length ? '<div class="overflow-x-auto scroll"><table class="excel-table"><thead><tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Avg Entry</th><th>Current Px</th><th>Market Val</th><th>Unrealized P&L</th><th>Action</th></tr></thead><tbody>' + posRows + '</tbody></table></div>' : empty('No open positions in Alpaca Paper account.')
+        ) +
+        card('🧾 Recent Official Alpaca Orders (' + orders.length + ')',
+          orders.length ? '<div class="overflow-x-auto scroll"><table class="excel-table"><thead><tr><th>Order ID</th><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Fill Px</th><th>Status</th><th>Action</th></tr></thead><tbody>' + ordRows + '</tbody></table></div>' : empty('No recent orders found.')
+        ) +
+      '</div>' +
+    '</div>';
   },
 
-  chan(){
-    return `
-    <div class="bg-panel border border-edge rounded-lg p-4 mb-5 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-base sm:text-lg font-semibold text-neon font-mono">Ernest P. Chan · Quantitative Trading Strategy Hub</h1>
-        <p class="text-xs sm:text-sm text-mute">Research blueprints from SSRN, NBER, arXiv (q-fin), and epchan.blogspot.com.</p>
-      </div>
-      <div class="flex flex-wrap gap-2 font-mono text-xs">
-        <a href="https://www.ssrn.com" target="_blank" class="px-2.5 py-1 rounded bg-ink border border-edge text-azure">SSRN ↗</a>
-        <a href="https://www.nber.org" target="_blank" class="px-2.5 py-1 rounded bg-ink border border-edge text-azure">NBER ↗</a>
-        <a href="https://arxiv.org/archive/q-fin" target="_blank" class="px-2.5 py-1 rounded bg-ink border border-edge text-azure">arXiv q-fin ↗</a>
-        <a href="https://epchan.blogspot.com" target="_blank" class="px-2.5 py-1 rounded bg-ink border border-edge text-azure">epchan.blogspot ↗</a>
-      </div>
-    </div>
-    <div class="grid md:grid-cols-2 gap-4">
-      ${S.chanFeed.map(item => `
-        <article class="bg-panel border border-edge rounded-lg p-4 flex flex-col justify-between">
-          <div>
-            <div class="flex justify-between text-xs font-mono text-azure"><span>${esc(item.source)}</span><span>${esc(item.published)}</span></div>
-            <h3 class="text-base font-semibold mt-1">${esc(item.title)}</h3>
-            <p class="text-xs text-warn font-mono mt-0.5">${esc(item.chanRef)}</p>
-            <p class="text-sm text-slate-300 mt-2">${esc(item.summary)}</p>
-            <div class="mt-2 bg-ink border border-edge rounded p-2 font-mono text-xs text-neon">${esc(item.formula)}</div>
-          </div>
-          <div class="mt-4 pt-3 border-t border-edge flex justify-between items-center">
-            <span class="font-mono text-xs text-mute">Sharpe: <strong class="text-neon">${item.metrics.sharpe}</strong> · Half-Life: ${item.metrics.half_life}</span>
-            <a href="${item.url}" target="_blank" class="font-mono text-xs text-azure hover:underline">Read Source ↗</a>
-          </div>
-        </article>
-      `).join('')}
-    </div>`;
+  chan: function() {
+    const filtered = S.chanFeed.filter(function(item) {
+      return S.chanFilter === 'ALL' || item.category === S.chanFilter;
+    });
+
+    const cats = [
+      ['ALL', 'All Strategies'],
+      ['MEAN_REVERSION', 'Mean Reversion & Pairs'],
+      ['MOMENTUM', 'Momentum & PEAD'],
+      ['RISK_KELLY', 'Kelly & Risk Math'],
+      ['ML_META', 'AI Meta-Labeling']
+    ];
+
+    const filterBtns = cats.map(function(pair) {
+      const k = pair[0], l = pair[1];
+      const cls = S.chanFilter === k ? 'border-neon bg-neon/15 text-neon' : 'border-edge bg-panel text-mute hover:text-slate-200';
+      return '<button data-chanfilter="' + k + '" class="px-3 py-1.5 rounded border ' + cls + '">' + l + '</button>';
+    }).join('');
+
+    const cardsHtml = filtered.map(function(item) {
+      return '<article class="bg-panel border border-edge hover:border-azure/60 transition rounded-lg p-5 flex flex-col justify-between">' +
+        '<div>' +
+          '<div class="flex items-center justify-between gap-2 text-xs font-mono text-mute">' +
+            '<span class="text-azure">' + esc(item.source) + '</span>' +
+            '<span>🔔 ' + esc(item.published) + '</span>' +
+          '</div>' +
+          '<h3 class="text-base font-semibold text-slate-100 mt-1.5">' + esc(item.title) + '</h3>' +
+          '<div class="mt-1 inline-block font-mono text-xs text-warn bg-warn/10 border border-warn/30 px-2 py-0.5 rounded">' + esc(item.chanRef) + '</div>' +
+          '<p class="text-sm text-slate-300 mt-3 leading-relaxed">' + esc(item.summary) + '</p>' +
+          '<div class="mt-3 bg-ink border border-edge rounded px-3 py-2 font-mono text-xs text-neon overflow-x-auto">Formula: ' + esc(item.formula) + '</div>' +
+        '</div>' +
+        '<div class="mt-4 pt-3 border-t border-edge">' +
+          '<div class="grid grid-cols-5 gap-2 text-center font-mono text-xs mb-3">' +
+            '<div class="bg-ink p-1.5 rounded border border-edge/60"><div class="text-mute text-[10px]">SHARPE</div><div class="text-neon font-semibold">' + item.metrics.sharpe + '</div></div>' +
+            '<div class="bg-ink p-1.5 rounded border border-edge/60"><div class="text-mute text-[10px]">HALF-LIFE</div><div>' + esc(item.metrics.half_life) + '</div></div>' +
+            '<div class="bg-ink p-1.5 rounded border border-edge/60"><div class="text-mute text-[10px]">ADF P-VAL</div><div>' + item.metrics.adf_p + '</div></div>' +
+            '<div class="bg-ink p-1.5 rounded border border-edge/60"><div class="text-mute text-[10px]">HURST (H)</div><div>' + item.metrics.hurst + '</div></div>' +
+            '<div class="bg-ink p-1.5 rounded border border-edge/60"><div class="text-mute text-[10px]">FRICTION</div><div>' + item.metrics.friction_bps + ' bps</div></div>' +
+          '</div>' +
+          '<div class="flex items-center gap-2">' +
+            '<button data-blueprint="' + item.id + '" class="flex-1 font-mono text-xs py-2 px-3 rounded bg-azure/15 border border-azure/50 text-azure hover:bg-azure/25">View Python Code & Deploy to Sandbox</button>' +
+            '<a href="' + item.url + '" target="_blank" rel="noopener" class="font-mono text-xs py-2 px-3 rounded border border-edge text-mute hover:text-slate-200">Source ↗</a>' +
+          '</div>' +
+        '</div>' +
+      '</article>';
+    }).join('');
+
+    return '<div class="bg-panel border border-edge rounded-lg p-4 mb-6">' +
+      '<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">' +
+        '<div>' +
+          '<div class="flex items-center gap-2">' +
+            '<span class="font-mono text-xs px-2 py-0.5 rounded bg-neon/15 border border-neon/40 text-neon">ERNEST P. CHAN · CH. 2, 3, 6 & 7</span>' +
+            '<h1 class="text-lg font-semibold">Quantitative Strategy Discovery & Research Feed</h1>' +
+          '</div>' +
+          '<p class="text-sm text-mute mt-1">Live notifications & strategy blueprints pulled from SSRN, NBER, arXiv q-fin, QuantConnect, and epchan.blogspot.com.</p>' +
+        '</div>' +
+        '<button id="pullChanBtn" class="font-mono text-xs px-3 py-2 rounded bg-neon/15 border border-neon/50 text-neon hover:bg-neon/25 self-start">↻ Pull Latest SSRN / arXiv / Chan Alerts</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="flex flex-wrap items-center justify-between gap-3 mb-4">' +
+      '<div class="flex flex-wrap gap-1.5 font-mono text-xs">' + filterBtns + '</div>' +
+      '<span class="font-mono text-xs text-mute">Showing ' + filtered.length + ' vetted blueprints</span>' +
+    '</div>' +
+    '<div class="grid md:grid-cols-2 gap-5">' + cardsHtml + '</div>';
   },
 
-  history(){
-    const rows = S.trades;
-    const totalPnl = rows.reduce((s,r)=>s+(Number(r.pnl)||0),0);
-    return `
-    <div class="bg-panel border border-edge rounded-lg p-4 space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-edge pb-3">
-        <div>
-          <h1 class="text-base sm:text-lg font-semibold">Execution Ledger & Strategy Spreadsheet (.CSV)</h1>
-          <p class="text-xs text-mute">Every Alpaca order routed via your VM or phone is logged here. Tap any Note cell to edit inline from mobile or laptop.</p>
-        </div>
-        <div class="flex gap-2">
-          <button id="exportCsvBtn" class="font-mono text-xs px-3 py-1.5 rounded border border-neon/50 bg-neon/15 text-neon">⬇ Export .CSV (Excel)</button>
-        </div>
-      </div>
-      <div class="bg-ink p-2.5 rounded border border-edge font-mono text-xs flex flex-wrap gap-6">
-        <span>fx =SUM(Net_PnL): <strong class="${totalPnl>=0?'text-neon':'text-alert'}">${totalPnl>=0?'+':''}${money(totalPnl)}</strong></span>
-        <span>Total Executions: <strong class="text-azure">${rows.length}</strong></span>
-      </div>
-      <div class="overflow-x-auto scroll border border-edge rounded">
-        <table class="excel-table">
-          <thead>
-            <tr>
-              <th class="excel-row-num">#</th><th>Order ID</th><th>Timestamp</th><th>Ticker</th><th>Strategy Used</th><th>Side</th><th>Qty</th><th>Entry Px</th><th>Current/Exit</th><th>Z-Score</th><th>Net P&L</th><th>Status</th><th>Quant Notes (Tap to Edit)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map((r,i)=>`
-              <tr>
-                <td class="excel-row-num">${i+1}</td>
-                <td class="text-azure">${esc(r.id)}</td>
-                <td class="text-mute">${esc(r.ts)}</td>
-                <td class="font-semibold">${esc(r.ticker)}</td>
-                <td>${esc(r.strategy)}</td>
-                <td>${pill(r.side)}</td>
-                <td class="text-right">${r.qty}</td>
-                <td class="text-right">$${Number(r.entry).toFixed(2)}</td>
-                <td class="text-right">$${Number(r.exit).toFixed(2)}</td>
-                <td class="text-right">${Number(r.z_score||0).toFixed(2)}σ</td>
-                <td class="text-right font-semibold ${r.pnl>=0?'text-neon':'text-alert'}">${r.pnl>=0?'+':''}$${Number(r.pnl).toFixed(2)}</td>
-                <td>${pill(r.status)}</td>
-                <td><input type="text" data-noteid="${esc(r.id)}" value="${esc(r.notes||'')}" class="excel-cell-input"></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>`;
+  history: function() {
+    const uniqueStrats = ['ALL'];
+    S.trades.forEach(function(t) {
+      if (uniqueStrats.indexOf(t.strategy) === -1) uniqueStrats.push(t.strategy);
+    });
+
+    const rows = S.trades.filter(function(t) {
+      const matchStrat = S.sheetStrategy === 'ALL' || t.strategy === S.sheetStrategy;
+      const q = S.sheetFilter.toLowerCase();
+      const matchText = !q || [t.id, t.ticker, t.strategy, t.regime, t.side, t.status, t.notes].some(function(v) {
+        return String(v || '').toLowerCase().includes(q);
+      });
+      return matchStrat && matchText;
+    });
+
+    rows.sort(function(a, b) {
+      const va = a[S.sheetSortCol], vb = b[S.sheetSortCol];
+      if (typeof va === 'number' && typeof vb === 'number') return S.sheetSortAsc ? va - vb : vb - va;
+      return S.sheetSortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+
+    const totalPnl = rows.reduce(function(s, r) { return s + (Number(r.pnl) || 0); }, 0);
+    const closedRows = rows.filter(function(r) { return r.status === 'CLOSED' || r.status === 'STOPPED'; });
+    const winCount = closedRows.filter(function(r) { return r.pnl > 0; }).length;
+    const winRate = closedRows.length ? ((winCount / closedRows.length) * 100).toFixed(1) : '0.0';
+    const avgSlippage = rows.length ? (rows.reduce(function(s, r) { return s + (Number(r.slippage_bps) || 0); }, 0) / rows.length).toFixed(2) : '0.00';
+
+    function sortIcon(col) {
+      return S.sheetSortCol === col ? (S.sheetSortAsc ? ' ▲' : ' ▼') : '';
+    }
+
+    const stratOptions = uniqueStrats.map(function(st) {
+      const sel = S.sheetStrategy === st ? ' selected' : '';
+      return '<option value="' + esc(st) + '"' + sel + '>' + (st === 'ALL' ? 'All Strategies' : esc(st)) + '</option>';
+    }).join('');
+
+    const tableRows = rows.map(function(r, i) {
+      const pnlColor = r.pnl > 0 ? 'text-neon' : (r.pnl < 0 ? 'text-alert' : 'text-mute');
+      const pnlSign = r.pnl > 0 ? '+' : '';
+      return '<tr>' +
+        '<td class="excel-row-num">' + (i + 1) + '</td>' +
+        '<td class="text-azure font-medium">' + esc(r.id) + '</td>' +
+        '<td class="text-mute">' + esc(r.ts) + '</td>' +
+        '<td class="font-semibold text-slate-100">' + esc(r.ticker) + '</td>' +
+        '<td class="text-slate-200">' + esc(r.strategy) + '</td>' +
+        '<td><span class="text-xs text-mute">' + esc(r.regime || '—') + '</span></td>' +
+        '<td>' + pill(r.side) + '</td>' +
+        '<td class="text-right">' + r.qty + '</td>' +
+        '<td class="text-right">$' + Number(r.entry || 0).toFixed(2) + '</td>' +
+        '<td class="text-right">$' + Number(r.exit || 0).toFixed(2) + '</td>' +
+        '<td class="text-right">' + Number(r.z_score || 0).toFixed(2) + 's</td>' +
+        '<td class="text-right font-semibold ' + pnlColor + '">' + pnlSign + '$' + Number(r.pnl || 0).toFixed(2) + '</td>' +
+        '<td>' + pill(r.status) + '</td>' +
+        '<td><input type="text" data-noteid="' + esc(r.id) + '" value="' + esc(r.notes || '') + '" class="excel-cell-input" placeholder="Add execution note…"></td>' +
+      '</tr>';
+    }).join('');
+
+    return '<div class="bg-panel border border-edge rounded-lg p-4 space-y-4">' +
+      '<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-edge pb-3">' +
+        '<div>' +
+          '<h1 class="text-base sm:text-lg font-semibold">Execution History & Strategy Attribution Spreadsheet (.CSV)</h1>' +
+          '<p class="text-xs text-mute">Click any column header to sort. Type inside the Notes column to annotate trades inline.</p>' +
+        '</div>' +
+        '<div class="flex flex-wrap items-center gap-2">' +
+          '<input id="sheetSearch" type="text" value="' + esc(S.sheetFilter) + '" placeholder="Filter ticker, ID, regime…" class="bg-ink border border-edge rounded px-3 py-1.5 text-xs font-mono w-48 sm:w-56">' +
+          '<select id="sheetStratSelect" class="bg-ink border border-edge rounded px-2.5 py-1.5 text-xs font-mono text-slate-200">' + stratOptions + '</select>' +
+          '<button id="addSimRowBtn" class="font-mono text-xs px-3 py-1.5 rounded border border-azure/50 bg-azure/15 text-azure hover:bg-azure/25">+ Log Trade Row</button>' +
+          '<button id="exportCsvBtn" class="font-mono text-xs px-3 py-1.5 rounded border border-neon/50 bg-neon/15 text-neon hover:bg-neon/25">⬇ Export .CSV (Excel)</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-ink p-3 rounded border border-edge font-mono text-xs">' +
+        '<div><span class="text-mute">fx =SUM(Net_PnL):</span> <strong class="' + (totalPnl >= 0 ? 'text-neon' : 'text-alert') + ' ml-1">' + (totalPnl >= 0 ? '+' : '') + money(totalPnl) + '</strong></div>' +
+        '<div><span class="text-mute">fx =WIN_RATE():</span> <strong class="text-azure ml-1">' + winRate + '% (' + winCount + '/' + closedRows.length + ')</strong></div>' +
+        '<div><span class="text-mute">fx =AVG(Slippage):</span> <strong class="text-warn ml-1">' + avgSlippage + ' bps</strong></div>' +
+        '<div><span class="text-mute">Rows:</span> <strong class="text-slate-200 ml-1">' + rows.length + '</strong></div>' +
+      '</div>' +
+      '<div class="overflow-x-auto scroll border border-edge rounded">' +
+        '<table class="excel-table">' +
+          '<thead><tr>' +
+            '<th class="excel-row-num">#</th>' +
+            '<th data-sort="id">A · Order ID' + sortIcon('id') + '</th>' +
+            '<th data-sort="ts">B · Timestamp' + sortIcon('ts') + '</th>' +
+            '<th data-sort="ticker">C · Ticker' + sortIcon('ticker') + '</th>' +
+            '<th data-sort="strategy">D · Strategy Used' + sortIcon('strategy') + '</th>' +
+            '<th data-sort="regime">E · Regime' + sortIcon('regime') + '</th>' +
+            '<th data-sort="side">F · Side' + sortIcon('side') + '</th>' +
+            '<th data-sort="qty">G · Qty' + sortIcon('qty') + '</th>' +
+            '<th data-sort="entry">H · Entry Px' + sortIcon('entry') + '</th>' +
+            '<th data-sort="exit">I · Exit Px' + sortIcon('exit') + '</th>' +
+            '<th data-sort="z_score">J · Z-Score' + sortIcon('z_score') + '</th>' +
+            '<th data-sort="pnl">K · Net P&L' + sortIcon('pnl') + '</th>' +
+            '<th data-sort="status">L · Status' + sortIcon('status') + '</th>' +
+            '<th>M · Quant Audit Notes (Editable)</th>' +
+          '</tr></thead>' +
+          '<tbody>' + tableRows + '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>';
   },
 
-  strategies:()=>`<div class="space-y-4">${sigs()}</div>`
+  strategies: function() {
+    return '<div class="space-y-4">' + sigs() + '</div>';
+  },
+
+  backtests: function() {
+    const resCards = S.results.length ? S.results.map(function(r) {
+      return card(esc(r.name) + ' <span class="ml-2">' + pill(r.kind) + '</span> <span class="text-mute text-xs font-normal ml-2">' + time(r.created_at) + '</span>', grid(r.metrics));
+    }).join('') : empty('No backtest results yet.');
+
+    return '<div class="grid sm:grid-cols-3 gap-3 mb-6">' +
+      btn('Run Vectorized Backtest', 'Backtest.py (1-bar shift + 8bps friction)', 'run_backtest', 'azure') +
+      btn('Run Parameter Grid Search', 'ParameterGridSearch.py (Parquet cache)', 'run_grid_search', 'azure') +
+      btn('Refresh Econometric Stats', 'stats_analyzer.py (ADF & Hurst)', 'refresh_stats', 'azure') +
+    '</div><div class="space-y-4">' + resCards + '</div>';
+  },
+
+  risk: function() {
+    return '<div class="space-y-4">' +
+      card('Decoupled Risk Circuit Breakers (risk_manager.py)', grid(S.kv.risk)) +
+      card('Data & Econometric Telemetry', grid(S.kv.data)) +
+    '</div>';
+  }
 };
 
-function renderLogLines(){
-  return S.logs.length ? S.logs.map(l=>`<div><span class="text-mute">${time(l.ts)}</span> <span class="${{ERROR:'text-alert',WARNING:'text-warn'}[l.level]||'text-neon'}">${esc((l.level||'INFO').padEnd(5))}</span> <span class="text-azure">[${esc(l.source||'bot')}]</span> ${esc(l.msg)}</div>`).join('') : empty('No log lines yet.');
-}
+// ============================================================================
+// 6. RENDER LOOP & EVENT BINDING
+// ============================================================================
+let tab = location.hash.slice(1) || 'overview';
 
-let tab=location.hash.slice(1)||'overview';
-function render(){
-  if(!V[tab])tab='overview';
-  $('#tabs').innerHTML=TABS.map(([k,l])=>`<a href="#${k}" class="px-3 py-2 text-xs sm:text-sm font-mono whitespace-nowrap border-b-2 transition ${k===tab?'border-neon text-neon font-semibold':'border-transparent text-mute hover:text-slate-200'}">${l}</a>`).join('');
-  $('#view').innerHTML=V[tab]();
-  const lb=$('#logbox');if(lb)lb.scrollTop=lb.scrollHeight;
-  if(tab==='overview') mountRealtimeChart();
+function render() {
+  if (!V[tab]) tab = 'overview';
+  const tabsEl = $('#tabs');
+  if (tabsEl) {
+    tabsEl.innerHTML = TABS.map(function(pair) {
+      const k = pair[0], l = pair[1];
+      const cls = k === tab ? 'border-neon text-neon font-semibold' : 'border-transparent text-mute hover:text-slate-200';
+      return '<a href="#' + k + '" class="px-3 py-2 text-xs sm:text-sm font-mono whitespace-nowrap border-b-2 transition ' + cls + '">' + l + '</a>';
+    }).join('');
+  }
+  const viewEl = $('#view');
+  if (viewEl) {
+    viewEl.innerHTML = V[tab]();
+  }
+  const lb = $('#logbox');
+  if (lb) lb.scrollTop = lb.scrollHeight;
+  if (tab === 'overview') mountRealtimeChart();
   bindForms();
 }
-addEventListener('hashchange',()=>{tab=location.hash.slice(1)||'overview';render()});
 
-function bindForms(){
-  // Bind Alpaca Order Ticket Form
+window.addEventListener('hashchange', function() {
+  tab = location.hash.slice(1) || 'overview';
+  render();
+});
+
+function bindForms() {
   const ordForm = $('#alpacaOrderForm');
-  if(ordForm){
-    ['ordEntry','ordStop','ordSym','ordSide','ordQty'].forEach(id=>{
+  if (ordForm) {
+    ['ordEntry', 'ordStop', 'ordSym', 'ordSide', 'ordQty'].forEach(function(id) {
       const el = document.getElementById(id);
-      if(el) el.addEventListener('input', ()=>{
-        S.orderTicket.symbol = $('#ordSym').value.toUpperCase();
-        S.orderTicket.side = $('#ordSide').value;
-        S.orderTicket.entry_price = parseFloat($('#ordEntry').value)||0;
-        S.orderTicket.stop_loss = parseFloat($('#ordStop').value)||0;
-        S.orderTicket.qty = parseInt($('#ordQty').value)||0;
-      });
+      if (el) {
+        el.addEventListener('input', function() {
+          S.orderTicket.symbol = $('#ordSym').value.toUpperCase();
+          S.orderTicket.side = $('#ordSide').value;
+          S.orderTicket.entry_price = parseFloat($('#ordEntry').value) || 0;
+          S.orderTicket.stop_loss = parseFloat($('#ordStop').value) || 0;
+          S.orderTicket.qty = parseInt($('#ordQty').value, 10) || 0;
+        });
+      }
     });
-    ordForm.addEventListener('submit', e=>{
+    ordForm.addEventListener('submit', function(e) {
       e.preventDefault();
-      const args = {
+      send('submit_order', {
         symbol: $('#ordSym').value.toUpperCase().trim(),
         side: $('#ordSide').value,
-        entry_price: parseFloat($('#ordEntry').value)||0,
-        stop_loss: parseFloat($('#ordStop').value)||0,
-        qty: parseInt($('#ordQty').value)||0,
+        entry_price: parseFloat($('#ordEntry').value) || 0,
+        stop_loss: parseFloat($('#ordStop').value) || 0,
+        qty: parseInt($('#ordQty').value, 10) || 0,
         strategy: 'Manual Web/Mobile OMS'
-      };
-      send('submit_order', args);
+      });
     });
   }
 
-  // Bind Live Parameter Editor Form
   const pForm = $('#paramEditForm');
-  if(pForm){
-    pForm.addEventListener('submit', e=>{
+  if (pForm) {
+    pForm.addEventListener('submit', function(e) {
       e.preventDefault();
       const newParams = {
-        z_entry_threshold: parseFloat($('#pZ').value)||2.0,
-        bb_window: parseInt($('#pWin').value)||20,
-        max_risk_per_trade: parseFloat($('#pRisk').value)||0.01,
-        stop_loss_pct: parseFloat($('#pStop').value)||0.02,
-        max_daily_drawdown: parseFloat($('#pDD').value)||0.03,
-        poll_seconds: parseInt($('#pPoll').value)||30
+        z_entry_threshold: parseFloat($('#pZ').value) || 2.0,
+        bb_window: parseInt($('#pWin').value, 10) || 20,
+        max_risk_per_trade: parseFloat($('#pRisk').value) || 0.01,
+        stop_loss_pct: parseFloat($('#pStop').value) || 0.02,
+        max_daily_drawdown: parseFloat($('#pDD').value) || 0.03,
+        poll_seconds: parseInt($('#pPoll').value, 10) || 30
       };
-      S.kv.risk = {...(S.kv.risk||{}), ...newParams};
+      S.kv.risk = Object.assign({}, S.kv.risk || {}, newParams);
       send('update_params', newParams);
     });
   }
 
-  // Bind Inline Spreadsheet Notes
-  document.querySelectorAll('[data-noteid]').forEach(inp => {
-    inp.addEventListener('change', e => {
-      const row = S.trades.find(t => t.id === inp.dataset.noteid);
-      if(row){ row.notes = e.target.value; toast(`Saved note for ${row.id}`); }
+  const search = $('#sheetSearch');
+  if (search) {
+    search.addEventListener('input', function(e) {
+      S.sheetFilter = e.target.value;
+      const pos = e.target.selectionStart;
+      render();
+      const s2 = $('#sheetSearch');
+      if (s2) { s2.focus(); s2.setSelectionRange(pos, pos); }
+    });
+  }
+
+  const stratSel = $('#sheetStratSelect');
+  if (stratSel) {
+    stratSel.addEventListener('change', function(e) {
+      S.sheetStrategy = e.target.value;
+      render();
+    });
+  }
+
+  document.querySelectorAll('[data-noteid]').forEach(function(inp) {
+    inp.addEventListener('change', function(e) {
+      const row = S.trades.find(function(t) { return t.id === inp.dataset.noteid; });
+      if (row) {
+        row.notes = e.target.value;
+        toast('Saved note for ' + row.id);
+      }
     });
   });
 }
 
-let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.remove('hidden');clearTimeout(tt);tt=setTimeout(()=>t.classList.add('hidden'),4000)}
-function setConn(s){const e=$('#conn');const m={live:['● Alpaca+VM Live','border-neon/50 text-neon'],offline:['reconnecting…','border-warn/50 text-warn'],demo:['sandbox preview','border-azure/50 text-azure']}[s];e.textContent=m[0];e.className='font-mono text-xs px-2 py-1 rounded border '+m[1]}
-
-let sb;
-async function send(cmd,args){
-  S.logs.push({ts:new Date().toISOString(), level:'INFO', source:'web', msg:`Queued '${cmd}' -> ${JSON.stringify(args)}`});
-
-  // Instant optimistic UI update in Demo/Preview mode
-  if(demo){
-    if(cmd==='submit_order'){
-      const bp = S.kv.account.buying_power || 400000;
-      const riskShare = Math.abs((args.entry_price||319) - (args.stop_loss||313)) || 5;
-      const qty = args.qty > 0 ? args.qty : Math.floor((bp * 0.01) / riskShare);
-      const id = 'ORD-' + Math.floor(1000 + Math.random()*9000);
-      S.kv.alpaca_positions.positions.unshift({
-        symbol:args.symbol, qty, side:args.side==='BUY'?'long':'short',
-        avg_entry_price:args.entry_price, current_price:args.entry_price,
-        market_value:qty*args.entry_price, unrealized_pl:0, unrealized_plpc:0
-      });
-      S.kv.alpaca_orders.orders.unshift({
-        id, full_id:id, symbol:args.symbol, side:args.side, qty,
-        filled_avg_price:args.entry_price, status:'FILLED', type:'MARKET', created_at:new Date().toISOString()
-      });
-      S.trades.unshift({
-        id, ts:new Date().toISOString().replace('T',' ').slice(0,19),
-        ticker:args.symbol, strategy:args.strategy||'Manual OMS', side:args.side,
-        qty, entry:args.entry_price, exit:args.entry_price, z_score:0, pnl:0, status:'FILLED', notes:'Routed from Mobile/Laptop OMS'
-      });
-    } else if(cmd==='close_position'){
-      S.kv.alpaca_positions.positions = S.kv.alpaca_positions.positions.filter(p=>p.symbol!==args.symbol);
-    }
-    render();
-    return toast(`✅ [${cmd}] executed (Add Supabase keys in CFG for live GCP VM routing)`);
-  }
-
-  const {error}=await sb.from('commands').insert({cmd,args,source:'web'});
-  toast(error?error.message:`⚡ Sent '${cmd}' to Cloud VM & Alpaca`);
+// ============================================================================
+// 7. SIMULATED LIVE STREAM & COMMAND HANDLER
+// ============================================================================
+let tt;
+function toast(m) {
+  const t = $('#toast');
+  if (!t) return;
+  t.textContent = m;
+  t.classList.remove('hidden');
+  clearTimeout(tt);
+  tt = setTimeout(function() { t.classList.add('hidden'); }, 4000);
 }
 
-document.addEventListener('click',e=>{
-  const b=e.target.closest('[data-cmd]');
-  if(b){
-    if(b.dataset.confirm&&!confirm(b.dataset.confirm))return;
-    send(b.dataset.cmd,JSON.parse(b.dataset.args||'{}'));
+function setConn(s) {
+  const e = $('#conn');
+  if (!e) return;
+  const map = {
+    live: ['● Alpaca+VM Live', 'border-neon/50 text-neon'],
+    offline: ['reconnecting…', 'border-warn/50 text-warn'],
+    demo: ['sandbox ready', 'border-azure/50 text-azure']
+  };
+  const cfg = map[s] || map.demo;
+  e.textContent = cfg[0];
+  e.className = 'font-mono text-xs px-2 py-1 rounded border ' + cfg[1];
+}
+
+function simulateLiveExecution() {
+  const aaplLast = S.ticks.AAPL[S.ticks.AAPL.length - 1].value;
+  const spyLast = S.ticks.SPY[S.ticks.SPY.length - 1].value;
+  const syms = [
+    { t: 'AAPL', strat: 'Bollinger Mean Reversion', reg: 'MEAN_REVERT (H=0.44)', px: aaplLast },
+    { t: 'SPY', strat: 'SMA 20/50 + ML Meta-Label', reg: 'TRENDING (H=0.55)', px: spyLast },
+    { t: 'GLD/GDX', strat: 'Engle-Granger Pairs (Chan Ch.7)', reg: 'COINTEGRATED (p=0.012)', px: 185.40 }
+  ];
+  const pick = syms[Math.floor(Math.random() * syms.length)];
+  const side = Math.random() > 0.45 ? 'BUY' : 'SELL_SHORT';
+  const qty = Math.floor(40 + Math.random() * 110);
+  const z = Number(((Math.random() * 1.2 + 1.9) * (side === 'BUY' ? -1 : 1)).toFixed(2));
+  const conf = Number((0.62 + Math.random() * 0.28).toFixed(2));
+  const pnl = Number(((Math.random() - 0.32) * 420).toFixed(2));
+  const id = 'ORD-' + (9042 + S.trades.length);
+  const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+  S.trades.unshift({
+    id: id, ts: nowStr, ticker: pick.t, strategy: pick.strat, regime: pick.reg,
+    side: side, qty: qty, entry: Number(pick.px.toFixed(2)), exit: Number((pick.px + (pnl / qty)).toFixed(2)),
+    stop: Number((pick.px * 0.985).toFixed(2)), z_score: z, ai_conf: conf, slippage_bps: 4.0, pnl: pnl, status: 'CLOSED',
+    notes: 'Auto-logged from live execution stream'
+  });
+
+  S.kv.account.buying_power = Number((S.kv.account.buying_power + pnl).toFixed(2));
+  S.kv.account.daily_pnl = Number(((S.kv.account.daily_pnl || 0) + pnl).toFixed(2));
+
+  S.logs.push({
+    ts: new Date().toISOString(),
+    level: 'INFO',
+    source: 'exec',
+    msg: id + ': ' + side + ' ' + qty + ' ' + pick.t + ' @ $' + pick.px.toFixed(2) + ' | Z=' + z + 's | Net P&L: $' + pnl.toFixed(2)
+  });
+  toast('Executed ' + id + ': ' + side + ' ' + qty + ' ' + pick.t);
+  render();
+}
+
+function exportToCSV() {
+  const headers = ['Order_ID', 'Timestamp_UTC', 'Ticker', 'Strategy', 'Regime', 'Side', 'Qty', 'Entry_Price', 'Exit_Price', 'Z_Score', 'Net_PnL_USD', 'Status', 'Notes'];
+  const csvRows = [headers.join(',')];
+  S.trades.forEach(function(r) {
+    const vals = [
+      r.id, r.ts, r.ticker, '"' + (r.strategy || '') + '"', '"' + (r.regime || '') + '"',
+      r.side, r.qty, r.entry, r.exit, r.z_score, r.pnl, r.status,
+      '"' + String(r.notes || '').replace(/"/g, '""') + '"'
+    ];
+    csvRows.push(vals.join(','));
+  });
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'trading_sandbox_executions_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Exported execution spreadsheet to .CSV');
+}
+
+async function send(cmd, args) {
+  S.logs.push({ ts: new Date().toISOString(), level: 'INFO', source: 'web', msg: 'Command ' + cmd + ' -> ' + JSON.stringify(args) });
+  if (cmd === 'toggle' && args.ticker && S.signals[args.ticker]) {
+    S.signals[args.ticker].enabled = args.enabled;
+  }
+
+  const isPlaceholder = !CFG.url || CFG.url.includes('YOUR-PROJECT') || !CFG.key || CFG.key.includes('YOUR_ANON_KEY') || !sb;
+  if (isPlaceholder) {
+    if (cmd === 'submit_order') {
+      const bp = S.kv.account.buying_power || 400000;
+      const riskShare = Math.abs((args.entry_price || 319) - (args.stop_loss || 313)) || 5;
+      const qty = args.qty > 0 ? args.qty : Math.floor((bp * 0.01) / riskShare);
+      const id = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+      S.kv.alpaca_positions.positions.unshift({
+        symbol: args.symbol, qty: qty, side: args.side === 'BUY' ? 'long' : 'short',
+        avg_entry_price: args.entry_price, current_price: args.entry_price,
+        market_value: qty * args.entry_price, unrealized_pl: 0, unrealized_plpc: 0
+      });
+      S.kv.alpaca_orders.orders.unshift({
+        id: id, full_id: id, symbol: args.symbol, side: args.side, qty: qty,
+        filled_avg_price: args.entry_price, status: 'FILLED', type: 'MARKET', created_at: new Date().toISOString()
+      });
+      S.trades.unshift({
+        id: id, ts: new Date().toISOString().replace('T', ' ').slice(0, 19),
+        ticker: args.symbol, strategy: args.strategy || 'Manual OMS', regime: 'MANUAL_OMS', side: args.side,
+        qty: qty, entry: args.entry_price, exit: args.entry_price, z_score: 0, pnl: 0, status: 'FILLED', notes: 'Routed from Web/Mobile OMS'
+      });
+    } else if (cmd === 'close_position') {
+      S.kv.alpaca_positions.positions = S.kv.alpaca_positions.positions.filter(function(p) { return p.symbol !== args.symbol; });
+    }
+    render();
+    return toast('Executed [' + cmd + '] in Sandbox Mode');
+  }
+
+  try {
+    const res = await sb.from('commands').insert({ cmd: cmd, args: args, source: 'web' });
+    toast(res.error ? res.error.message : 'Sent ' + cmd + ' to Cloud VM & Alpaca');
+  } catch (err) {
+    toast('Error sending command: ' + err.message);
+  }
+}
+
+document.addEventListener('click', function(e) {
+  const b = e.target.closest('[data-cmd]');
+  if (b) {
+    if (b.dataset.confirm && !confirm(b.dataset.confirm)) return;
+    send(b.dataset.cmd, JSON.parse(b.dataset.args || '{}'));
     return;
   }
-  const cp=e.target.closest('[data-closepos]');
-  if(cp){
+
+  const cp = e.target.closest('[data-closepos]');
+  if (cp) {
     const sym = cp.dataset.closepos;
-    if(confirm(`Close open Alpaca position for ${sym}?`)) send('close_position',{symbol:sym});
+    if (confirm('Close open Alpaca position for ' + sym + '?')) send('close_position', { symbol: sym });
     return;
   }
-  const co=e.target.closest('[data-cancelord]');
-  if(co){
-    send('cancel_order',{order_id:co.dataset.cancelord});
+
+  const co = e.target.closest('[data-cancelord]');
+  if (co) {
+    send('cancel_order', { order_id: co.dataset.cancelord });
     return;
   }
-  const tk=e.target.closest('[data-ticker]');
-  if(tk){ S.chartTicker=tk.dataset.ticker; render(); return; }
-  if(e.target.closest('#simExecBtn')){
-    location.hash='#alpaca';
+
+  const tk = e.target.closest('[data-ticker]');
+  if (tk) { S.chartTicker = tk.dataset.ticker; render(); return; }
+
+  const cf = e.target.closest('[data-chanfilter]');
+  if (cf) { S.chanFilter = cf.dataset.chanfilter; render(); return; }
+
+  const bp = e.target.closest('[data-blueprint]');
+  if (bp) {
+    const item = S.chanFeed.find(function(x) { return x.id === bp.dataset.blueprint; });
+    if (item) {
+      $('#modalTitle').textContent = item.id + ' · ' + item.title;
+      $('#modalBody').innerHTML =
+        '<div class="text-xs font-mono text-warn">' + esc(item.chanRef) + ' · Source: ' + esc(item.source) + '</div>' +
+        '<p class="text-slate-300 text-sm">' + esc(item.summary) + '</p>' +
+        '<div class="bg-ink border border-edge rounded p-3 font-mono text-xs text-neon overflow-x-auto"><pre>' + esc(item.code) + '</pre></div>' +
+        '<div class="flex justify-end gap-2 pt-2">' +
+          '<button id="deployBlueprintBtn" data-id="' + item.id + '" class="font-mono text-xs px-4 py-2 rounded bg-neon/20 border border-neon text-neon hover:bg-neon/30">Activate Strategy in Sandbox Monitor</button>' +
+        '</div>';
+      $('#modal').classList.remove('hidden');
+    }
     return;
   }
-  if(e.target.closest('#exportCsvBtn')){
-    const headers = ['Order_ID','Timestamp','Ticker','Strategy','Side','Qty','Entry','Exit','Z_Score','Net_PnL','Status','Notes'];
-    const csv = [headers.join(','), ...S.trades.map(r=>[r.id,r.ts,r.ticker,`"${r.strategy}"`,r.side,r.qty,r.entry,r.exit,r.z_score,r.pnl,r.status,`"${r.notes||''}"`].join(','))].join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-    a.download = 'alpaca_sandbox_ledger.csv';
-    a.click();
+
+  const dbp = e.target.closest('#deployBlueprintBtn');
+  if (dbp) {
+    const item = S.chanFeed.find(function(x) { return x.id === dbp.dataset.id; });
+    if (item) {
+      S.signals[item.id] = {
+        ticker: item.id,
+        strategy: item.title.slice(0, 38) + '…',
+        status: 'WATCHING',
+        enabled: true,
+        metrics: item.metrics
+      };
+      $('#modal').classList.add('hidden');
+      toast('Deployed ' + item.id + ' into Active Strategy Monitor');
+      location.hash = '#overview';
+      render();
+    }
+    return;
+  }
+
+  if (e.target.closest('#closeModal') || e.target.id === 'modal') {
+    $('#modal').classList.add('hidden');
+    return;
+  }
+
+  if (e.target.closest('#skipLogin')) {
+    $('#login').classList.add('hidden');
+    setConn('demo');
+    return;
+  }
+
+  const sortTh = e.target.closest('[data-sort]');
+  if (sortTh) {
+    const col = sortTh.dataset.sort;
+    if (S.sheetSortCol === col) S.sheetSortAsc = !S.sheetSortAsc;
+    else { S.sheetSortCol = col; S.sheetSortAsc = false; }
+    render();
+    return;
+  }
+
+  if (e.target.closest('#exportCsvBtn')) { exportToCSV(); return; }
+  if (e.target.closest('#simExecBtn') || e.target.closest('#addSimRowBtn')) { simulateLiveExecution(); return; }
+
+  if (e.target.closest('#pullChanBtn')) {
+    S.chanFeed.unshift({
+      id: 'CHAN-0' + (S.chanFeed.length + 1),
+      source: 'SSRN / epchan.blogspot.com Alert',
+      url: 'https://www.ssrn.com',
+      category: 'MEAN_REVERSION',
+      title: 'PCA Statistical Factor Arbitrage on S&P 500 Sector ETFs (XLF / XLK / XLE)',
+      chanRef: 'Ernest Chan · Chapter 7 (Factor Models & Principal Component Analysis)',
+      published: 'Just now',
+      metrics: { sharpe: 2.28, half_life: '6.4 Days', adf_p: 0.009, hurst: 0.40, friction_bps: 5 },
+      summary: 'Extracts top 3 statistical eigenvectors across S&P sector ETFs via Principal Component Analysis. Residual spreads exceeding 2.2s revert within a 6.4-day half-life.',
+      formula: 'R = X*b + u   |   Residual Z = u / sigma(u)',
+      code: '# PCA Factor Residual Mean Reversion\nfrom sklearn.decomposition import PCA\npca = PCA(n_components=3).fit(returns_matrix)'
+    });
+    toast('New Quantitative Strategy Alert pulled from SSRN / Chan Feed!');
+    render();
+    return;
+  }
+
+  if (e.target.closest('#simToggle')) {
+    S.simActive = !S.simActive;
+    const toggleBtn = $('#simToggle');
+    toggleBtn.textContent = S.simActive ? '● Stream: ON' : '○ Stream: PAUSED';
+    toggleBtn.className = S.simActive
+      ? 'font-mono text-xs px-2.5 py-1 rounded border border-neon/50 bg-neon/10 text-neon'
+      : 'font-mono text-xs px-2.5 py-1 rounded border border-edge text-mute';
     return;
   }
 });
 
-async function load(){
-  const [kv,sg,rs,lg,cm]=await Promise.all([sb.from('kv').select('*'),sb.from('signals').select('*'),
-    sb.from('results').select('*').order('created_at',{ascending:false}).limit(50),
-    sb.from('logs').select('*').order('id',{ascending:false}).limit(200),
-    sb.from('commands').select('*').order('id',{ascending:false}).limit(30)]);
-  (kv.data||[]).forEach(r=>S.kv[r.key]=r.data);
-  (sg.data||[]).forEach(r=>S.signals[r.ticker]=r);
-  if(rs.data?.length){
-    S.results=rs.data;
-    const ledgerRows = rs.data.filter(x=>x.kind==='TRADE_LEDGER').map(x=>x.metrics);
-    if(ledgerRows.length) S.trades = ledgerRows;
+setInterval(function() {
+  if (!S.simActive) return;
+  const now = Math.floor(Date.now() / 1000);
+  ['AAPL', 'SPY', 'GLD_GDX'].forEach(function(k) {
+    const arr = S.ticks[k];
+    const last = arr[arr.length - 1];
+    const step = k === 'GLD_GDX' ? (Math.random() - 0.5) * 0.04 : (Math.random() - 0.495) * 0.35;
+    const nextVal = Number((last.value + step).toFixed(k === 'GLD_GDX' ? 3 : 2));
+    arr.push({ time: Math.max(now, last.time + 1), value: nextVal });
+    if (arr.length > 180) arr.shift();
+  });
+
+  const aaplPx = S.ticks.AAPL[S.ticks.AAPL.length - 1].value;
+  const z = Number(((aaplPx - 316.40) / 1.55).toFixed(3));
+  if (S.signals.AAPL) {
+    S.signals.AAPL.metrics.close = aaplPx;
+    S.signals.AAPL.metrics.z_score = z;
+    S.signals.AAPL.status = Math.abs(z) >= 2.0 ? 'ACTIVE' : 'NO SIGNAL';
   }
-  if(lg.data?.length)S.logs=lg.data.reverse();
-  if(cm.data?.length)S.commands=cm.data;
-  render();
+
+  if (Math.random() < 0.25) {
+    S.logs.push({
+      ts: new Date().toISOString(),
+      level: Math.abs(z) >= 2.15 ? 'WARNING' : 'INFO',
+      source: 'bot',
+      msg: '[AAPL] Close: $' + aaplPx.toFixed(2) + ' | Z-Score: ' + z + 's | Hurst: 0.442'
+    });
+    if (S.logs.length > 200) S.logs.shift();
+    const lb = $('#logbox');
+    if (lb) {
+      lb.innerHTML = renderLogLines();
+      lb.scrollTop = lb.scrollHeight;
+      const lc = $('#logCount');
+      if (lc) lc.textContent = S.logs.length + ' lines';
+    }
+  }
+
+  if (tab === 'overview' && priceSeries) {
+    updateChartSeriesData();
+    const lp = $('#livePx');
+    if (lp) {
+      const key = S.chartTicker === 'GLD/GDX' ? 'GLD_GDX' : S.chartTicker;
+      const v = S.ticks[key][S.ticks[key].length - 1].value;
+      lp.textContent = S.chartTicker === 'GLD/GDX' ? v.toFixed(3) : '$' + v.toFixed(2);
+    }
+  }
+}, 1500);
+
+// ============================================================================
+// 8. FAIL-SAFE INITIALIZATION (Render First, Supabase Second)
+// ============================================================================
+async function load() {
+  if (!sb) return;
+  try {
+    const res = await Promise.all([
+      sb.from('kv').select('*'),
+      sb.from('signals').select('*'),
+      sb.from('results').select('*').order('created_at', { ascending: false }).limit(50),
+      sb.from('logs').select('*').order('id', { ascending: false }).limit(200),
+      sb.from('commands').select('*').order('id', { ascending: false }).limit(30)
+    ]);
+    const kv = res[0], sg = res[1], rs = res[2], lg = res[3], cm = res[4];
+    (kv.data || []).forEach(function(r) { S.kv[r.key] = r.data; });
+    (sg.data || []).forEach(function(r) { S.signals[r.ticker] = r; });
+    if (rs.data && rs.data.length) {
+      S.results = rs.data;
+      const ledgerRows = rs.data.filter(function(x) { return x.kind === 'TRADE_LEDGER'; }).map(function(x) { return x.metrics; });
+      if (ledgerRows.length) S.trades = ledgerRows;
+    }
+    if (lg.data && lg.data.length) S.logs = lg.data.reverse();
+    if (cm.data && cm.data.length) S.commands = cm.data;
+    render();
+  } catch (err) {
+    console.warn('Supabase load fallback:', err);
+  }
 }
 
-function subscribe(){
-  sb.channel('sandbox').on('postgres_changes',{event:'*',schema:'public'},p=>{
-    if(p.eventType==='DELETE')return;const r=p.new,t=p.table;
-    if(t==='kv')S.kv[r.key]=r.data;
-    else if(t==='signals')S.signals[r.ticker]=r;
-    else if(t==='results'){
-      S.results=[r,...S.results].slice(0,50);
-      if(r.kind==='TRADE_LEDGER' && r.metrics) S.trades.unshift(r.metrics);
+function subscribe() {
+  if (!sb) return;
+  sb.channel('sandbox').on('postgres_changes', { event: '*', schema: 'public' }, function(p) {
+    if (p.eventType === 'DELETE') return;
+    const r = p.new, t = p.table;
+    if (t === 'kv') S.kv[r.key] = r.data;
+    else if (t === 'signals') S.signals[r.ticker] = r;
+    else if (t === 'results') {
+      S.results = [r].concat(S.results).slice(0, 50);
+      if (r.kind === 'TRADE_LEDGER' && r.metrics) S.trades.unshift(r.metrics);
     }
-    else if(t==='logs')S.logs=[...S.logs,r].slice(-200);
-    else if(t==='commands'){
-      const i=S.commands.findIndex(c=>c.id===r.id);i<0?S.commands.unshift(r):S.commands[i]=r;
-      if(r.status==='done'||r.status==='error')toast(`${r.cmd}: ${r.status}${r.result?' · '+r.result:''}`);
+    else if (t === 'logs') S.logs = S.logs.concat([r]).slice(-200);
+    else if (t === 'commands') {
+      const i = S.commands.findIndex(function(c) { return c.id === r.id; });
+      if (i < 0) S.commands.unshift(r); else S.commands[i] = r;
+      if (r.status === 'done' || r.status === 'error') toast(r.cmd + ': ' + r.status);
     }
     render();
-  }).subscribe(s=>{setConn(s==='SUBSCRIBED'?'live':'offline');if(s==='SUBSCRIBED')load()});
+  }).subscribe(function(s) {
+    setConn(s === 'SUBSCRIBED' ? 'live' : 'offline');
+    if (s === 'SUBSCRIBED') load();
+  });
 }
 
-async function start(){
-  $('#login').classList.add('hidden');$('#signout').classList.remove('hidden');
-  await load();subscribe();
+async function start() {
+  $('#login').classList.add('hidden');
+  $('#signout').classList.remove('hidden');
+  await load();
+  subscribe();
 }
-async function init(){
+
+async function init() {
+  // 1. Always render the UI immediately so the screen is never blank
   render();
-  if(demo)return setConn('demo');
-  sb=supabase.createClient(CFG.url,CFG.key);
-  const {data:{session}}=await sb.auth.getSession();
-  session?start():$('#login').classList.remove('hidden');
-  $('#lf').addEventListener('submit',async e=>{e.preventDefault();
-    const {error}=await sb.auth.signInWithPassword({email:$('#em').value,password:$('#pw').value});
-    error?$('#lerr').textContent=error.message:start()});
-  $('#signout').addEventListener('click',async()=>{await sb.auth.signOut();location.reload()});
+
+  // 2. Check if using placeholder keys
+  const isPlaceholder = !CFG.url || CFG.url.includes('YOUR-PROJECT') || !CFG.key || CFG.key.includes('YOUR_ANON_KEY');
+  if (isPlaceholder || typeof supabase === 'undefined') {
+    setConn('demo');
+    return;
+  }
+
+  // 3. Connect to Supabase safely
+  try {
+    sb = supabase.createClient(CFG.url, CFG.key);
+    const sessionRes = await sb.auth.getSession();
+    const session = sessionRes && sessionRes.data ? sessionRes.data.session : null;
+    if (session) {
+      start();
+    } else {
+      $('#login').classList.remove('hidden');
+    }
+    $('#lf').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const authRes = await sb.auth.signInWithPassword({ email: $('#em').value, password: $('#pw').value });
+      if (authRes.error) $('#lerr').textContent = authRes.error.message;
+      else start();
+    });
+    $('#signout').addEventListener('click', async function() {
+      await sb.auth.signOut();
+      location.reload();
+    });
+  } catch (err) {
+    console.error('Supabase init fallback:', err);
+    setConn('demo');
+  }
 }
-init();
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 </script>
 </body>
 </html>
