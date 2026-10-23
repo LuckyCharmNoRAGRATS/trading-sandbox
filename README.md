@@ -102,6 +102,6 @@ tail -f ~/trading-sandbox/logs/trading_bot.log
 
 ## Intellectual Property & Regulatory Disclaimer
 
-**Copyright © 2026 [Author / System Owner]. All Rights Reserved.**  
+**Copyright © 2026 [LuckyCharmNoRAGRATS]. All Rights Reserved.**  
 This software, documentation, econometric algorithms, machine learning pipelines, and user interface designs are the sole proprietary intellectual property of the Copyright Holder. No portion may be reproduced, distributed, reverse-engineered, or deployed for commercial trading without explicit written permission.  
 *Regulatory Notice:* Engineered for quantitative research, paper-trading validation ($400,000 simulated Alpaca mandate), and private proprietary capital management. Past backtested or paper-traded performance does not guarantee future live returns.
