@@ -2,7 +2,7 @@
 
 **Repository:** `trading-sandbox`  
 **Classification:** Proprietary & Confidential  
-**Copyright © 2026 [Author / System Owner]. All Rights Reserved.**
+**Copyright © 2026 [LuckyCharmNoRAGRATS]. All Rights Reserved.**
 
 ---
 
