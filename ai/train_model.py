@@ -1,84 +1,93 @@
-import os
+import sys
+from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import TimeSeriesSplit
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import precision_score, roc_auc_score
 
-# Import your local AI modules
-from triple_barrier import TripleBarrierLabeler
-from meta_labeler import MetaLabelFilter
-
-# Setup institutional directories
 ROOT_DIR = Path(__file__).resolve().parent.parent
-DATA_PATH = ROOT_DIR / "data" / "SPY_1Day_365d.parquet"
-MODEL_DIR = ROOT_DIR / "models"
-MODEL_DIR.mkdir(parents=True, exist_ok=True)
+sys.path.insert(0, str(ROOT_DIR))
 
-def train_meta_model():
-    if not DATA_PATH.exists():
-        print(f"❌ Missing data cache: {DATA_PATH}. Run data_fetcher.py first.")
-        return
+from quant_engine import QuantConfig, DataLayer, RegimeAnalyzer
 
-    print("1. Loading historical Parquet data...")
-    df = pd.read_parquet(DATA_PATH)
-    
-    # Placeholder: Generate dummy signals to represent your base strategy firing
-    # (1 = Long, -1 = Short, 0 = Flat)
-    df['sma_20'] = df['close'].rolling(20).mean()
-    df['sma_50'] = df['close'].rolling(50).mean()
-    df['signal'] = np.where(df['sma_20'] > df['sma_50'], 1, -1)
-    df['signal'] = df['signal'].shift(1).fillna(0) # Prevent look-ahead bias
-    
-    print("2. Engineering Features and Triple Barrier Labels...")
-    ai_filter = MetaLabelFilter()
-    features_df = ai_filter.generate_features(df)
-    
-    labeler = TripleBarrierLabeler(profit_target_pct=0.02, stop_loss_pct=0.01, max_hold_bars=10)
-    labeled_df = labeler.apply_barriers(df, signal_col='signal')
-    
-    # Merge features and labels
-    dataset = features_df.join(labeled_df['target_label']).dropna()
-    
-    # Filter dataset strictly to rows where the base strategy signaled a trade
-    train_data = dataset[dataset['signal'] != 0].copy()
-    
-    # Binary Classification Task: 1 (Hit Profit Target) vs 0 (Hit Stop Loss or Time Expired)
-    train_data['binary_target'] = np.where(train_data['target_label'] == 1, 1, 0)
-    
-    # Define strictly contextual features (exclude raw price to prevent overfitting)
-    feature_cols = ['returns_1d', 'returns_5d', 'volatility_20d', 'price_to_sma', 'hurst']
-    X = train_data[feature_cols]
-    y = train_data['binary_target']
-    
-    if len(X) < 50:
-        print("⚠️ Not enough labeled trades to train. Increase your data timeframe.")
-        return
+FEATURE_COLS = ["returns_1d", "returns_5d", "volatility_20d", "price_to_sma", "hurst"]
 
-    print("3. Executing Purged Time-Series Cross-Validation...")
-    # gap=10 strictly drops the overlapping hold period between train and test sets
-    tscv = TimeSeriesSplit(n_splits=5, gap=10)
-    model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42, class_weight='balanced')
-    
-    fold = 1
-    for train_index, test_index in tscv.split(X):
-        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
-        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
-        
-        model.fit(X_train, y_train)
-        preds = model.predict(X_test)
-        acc = accuracy_score(y_test, preds)
-        print(f"   Fold {fold} OOS Accuracy: {acc:.2%}")
-        fold += 1
-        
-    print("\n4. Training Final Production Model...")
+
+def build_features_and_triple_barrier(
+    df: pd.DataFrame, pt: float = 0.02, sl: float = 0.01, max_hold: int = 10
+) -> pd.DataFrame:
+    data = df.copy()
+    data["returns_1d"] = data["close"].pct_change(1)
+    data["returns_5d"] = data["close"].pct_change(5)
+    data["volatility_20d"] = data["returns_1d"].rolling(20).std() * np.sqrt(252)
+    data["sma_20"] = data["close"].rolling(20).mean()
+    data["sma_40"] = data["close"].rolling(40).mean()
+    data["price_to_sma"] = data["close"] / data["sma_20"]
+    data["hurst"] = (
+        data["close"]
+        .rolling(30)
+        .apply(lambda x: RegimeAnalyzer.hurst_exponent(x, max_lag=15), raw=True)
+    )
+
+    # Base Strategy Signal: SMA 20/40
+    data["signal"] = np.where(data["sma_20"] > data["sma_40"], 1, -1)
+    data.dropna(inplace=True)
+
+    # Triple Barrier Labeling (1 = Profit Target Hit First, 0 = Stop Loss or Time Expiry)
+    closes = data["close"].to_numpy()
+    signals = data["signal"].to_numpy()
+    labels = np.zeros(len(data), dtype=int)
+
+    for i in range(len(data) - max_hold):
+        entry = closes[i]
+        sig = signals[i]
+        upper = entry * (1 + pt) if sig > 0 else entry * (1 - pt)
+        lower = entry * (1 - sl) if sig > 0 else entry * (1 + sl)
+
+        for j in range(i + 1, i + 1 + max_hold):
+            price = closes[j]
+            if (sig > 0 and price >= upper) or (sig < 0 and price <= upper):
+                labels[i] = 1
+                break
+            if (sig > 0 and price <= lower) or (sig < 0 and price >= lower):
+                labels[i] = 0
+                break
+
+    data["target"] = labels
+    return data.iloc[:-max_hold]
+
+
+def train_and_export_meta_model(symbol: str = "SPY") -> None:
+    cfg = QuantConfig()
+    df_raw = DataLayer(cfg).get_bars(symbol=symbol, days=730)
+    dataset = build_features_and_triple_barrier(df_raw)
+
+    X = dataset[FEATURE_COLS]
+    y = dataset["target"]
+
+    # Purged Time-Series Cross-Validation (gap=10 bars prevents overlapping label leakage)
+    tscv = TimeSeriesSplit(n_splits=4, gap=10)
+    precisions = []
+
+    model = RandomForestClassifier(
+        n_estimators=200, max_depth=5, min_samples_leaf=10, random_state=42
+    )
+
+    for train_idx, test_idx in tscv.split(X):
+        model.fit(X.iloc[train_idx], y.iloc[train_idx])
+        preds = model.predict(X.iloc[test_idx])
+        precisions.append(precision_score(y.iloc[test_idx], preds, zero_division=0))
+
+    # Fit on full dataset and serialize
     model.fit(X, y)
-    
-    model_path = MODEL_DIR / "rf_meta_model.pkl"
+    model_path = ROOT_DIR / "models" / "rf_meta_model.pkl"
     joblib.dump(model, model_path)
-    print(f"✅ Institutional Meta-Labeler successfully trained and saved to {model_path}")
+
+    print(f"✅ Meta-Labeler Trained on {len(X)} events | Mean CV Precision: {np.mean(precisions):.2%}")
+    print(f"📦 Saved serialized model to: {model_path}")
+
 
 if __name__ == "__main__":
-    train_meta_model()
+    train_and_export_meta_model("SPY")

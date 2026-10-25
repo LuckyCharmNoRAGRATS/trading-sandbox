@@ -204,7 +204,49 @@ class FrictionBacktester:
             "Max_Drawdown_Pct": round(float(max_dd) * 100, 2),
             "Win_Rate_Pct": round(float(win_rate) * 100, 1),
         }
+import joblib
+import pandas as pd
+from pathlib import Path
 
+# 1. Load the Trained AI Model at the top of your script
+ROOT_DIR = Path(__file__).resolve().parent
+MODEL_PATH = ROOT_DIR / "models" / "rf_meta_model.pkl"
+
+try:
+    meta_model = joblib.load(MODEL_PATH)
+    print("✅ AI Meta-Labeler loaded successfully.")
+except FileNotFoundError:
+    print("⚠️ Warning: AI Model not found. Running base statistical strategy only.")
+    meta_model = None
+
+# ... (Inside your evaluate_ticker or execute_trade function) ...
+
+def evaluate_and_trade(symbol: str, current_features: dict):
+    # Assume your base strategy (e.g., Z-Score) generated a BUY signal
+    base_signal = True 
+    
+    if base_signal and meta_model:
+        # 2. Format the live market data into the exact features the AI expects
+        live_data = pd.DataFrame([{
+            'returns_1d': current_features['returns_1d'],
+            'returns_5d': current_features['returns_5d'],
+            'volatility_20d': current_features['volatility_20d'],
+            'price_to_sma': current_features['price_to_sma'],
+            'hurst': current_features['hurst']
+        }])
+        
+        # 3. Ask the AI for the probability of success
+        ai_probability = meta_model.predict_proba(live_data)[0][1] # Probability of class 1 (Profit)
+        
+        print(f"🤖 AI Confidence Score for {symbol}: {ai_probability:.2%}")
+        
+        # 4. The AI Veto Filter
+        if ai_probability < 0.60:
+            print(f"🛑 AI VETO: Confidence ({ai_probability:.2%}) is below 60% threshold. Trade aborted.")
+            return # Skip the trade
+            
+        print("🟢 AI APPROVED: Routing order to Alpaca...")
+        # ... (Proceed to RiskManager sizing and Alpaca order submission) ...
 
 # 6. Order Management & Webhook Execution Engine
 class ExecutionOMS:
