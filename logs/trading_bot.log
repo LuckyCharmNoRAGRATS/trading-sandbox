@@ -254,3 +254,14 @@ aiohttp.client_exceptions.ClientConnectionResetError: Cannot write to closing tr
 2026-10-17 16:25:13 | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 404 Not Found"
 2026-10-17 16:27:11 | INFO | Shard ID None has connected to Gateway (Session ID: 6d52d08800cbcae99fe46db8280afff2).
 2026-10-17 16:28:25 | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-26 16:24:13 | WARNING | Supabase credentials missing. Dashboard bridge operating in offline mode.
+2026-10-26 16:24:14 | INFO | Live Execution Engine Started.
+2026-10-26 16:28:21 | INFO | [GLD] AI VETO: Confidence 43.58% < 60%.
+2026-10-26 16:29:22 | INFO | [GLD] AI VETO: Confidence 43.58% < 60%.
+2026-10-26 16:30:24 | INFO | [GLD] AI VETO: Confidence 43.58% < 60%.
+2026-10-26 16:31:26 | INFO | [GLD] AI VETO: Confidence 43.58% < 60%.
+2026-10-26 16:32:30 | INFO | [GLD] AI VETO: Confidence 43.58% < 60%.
+2026-10-26 16:33:32 | INFO | [GLD] AI VETO: Confidence 43.58% < 60%.
+2026-10-26 16:34:34 | INFO | [GLD] AI VETO: Confidence 43.58% < 60%.
+2026-10-26 16:35:40 | INFO | [GLD] AI VETO: Confidence 43.58% < 60%.
+2026-10-26 16:36:42 | INFO | [GLD] AI VETO: Confidence 43.58% < 60%.

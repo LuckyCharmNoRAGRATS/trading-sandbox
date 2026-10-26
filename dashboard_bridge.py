@@ -1,97 +1,75 @@
-"""
-dashboard_bridge.py: Real-time 2-way bridge between ~/trading-sandbox (Alpaca) and Web/Mobile Dashboard.
-"""
-import os, queue, logging, threading, time, datetime as dt
-import requests
-from dotenv import load_dotenv
-from supabase import create_client
+import os
+import logging
+from datetime import datetime, timezone
+from typing import Dict, Any, List, Optional
 
-load_dotenv(override=True)
+try:
+    from supabase import create_client, Client
+except ImportError:
+    Client = Any
 
-_sb = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
-_hook = os.getenv("DISCORD_WEBHOOK_URL") or os.getenv("DISCORD_STATUS_WEBHOOK")
-_q: "queue.Queue[tuple[str, dict]]" = queue.Queue()
-_now = lambda: dt.datetime.now(dt.timezone.utc).isoformat()
+logger = logging.getLogger(__name__)
 
+class DashboardBridge:
+    def __init__(self):
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_KEY")
+        self.client: Optional[Client] = None
+        
+        if url and key:
+            try:
+                self.client = create_client(url, key)
+            except Exception as e:
+                logger.error(f"Failed to initialize Supabase client: {e}")
+        else:
+            logger.warning("Supabase credentials missing. Dashboard bridge operating in offline mode.")
 
-def _worker():
-    while True:
-        table, row = _q.get()
+    def set_kv(self, key: str, value: dict) -> bool:
+        if not self.client: 
+            return False
         try:
-            if table == "_upsert_kv":
-                _sb.table("kv").upsert(row).execute()
-            elif table == "_upsert_signal":
-                _sb.table("signals").upsert(row).execute()
-            else:
-                _sb.table(table).insert(row).execute()
+            self.client.table("kv").upsert({"key": key, "value": value}).execute()
+            return True
         except Exception as e:
-            print("bridge write failed:", e)
-        finally:
-            _q.task_done()
+            logger.error(f"Supabase KV write failed: {e}")
+            return False
 
-threading.Thread(target=_worker, daemon=True).start()
-
-
-def flush():
-    _q.join()
-
-def log(level, msg, source="bot"):
-    _q.put(("logs", {"level": level, "msg": str(msg)[:2000], "source": source}))
-
-def set_kv(key, data):
-    _q.put(("_upsert_kv", {"key": key, "data": data, "updated_at": _now()}))
-
-def set_signal(ticker, strategy, status, metrics, enabled=None):
-    row = {"ticker": ticker, "strategy": strategy, "status": status, "metrics": metrics, "updated_at": _now()}
-    if enabled is not None:
-        row["enabled"] = enabled
-    _q.put(("_upsert_signal", row))
-
-def push_result(kind, name, metrics):
-    _q.put(("results", {"kind": kind, "name": name, "metrics": metrics}))
-
-def push_trade_row(trade_dict: dict):
-    """Pushes a live Alpaca fill directly into the Excel Execution Spreadsheet on the website."""
-    _q.put(("results", {"kind": "TRADE_LEDGER", "name": trade_dict.get("id", "ORD"), "metrics": trade_dict}))
-
-def record_command(cmd, source, result, status="done"):
-    _q.put(("commands", {"cmd": cmd, "source": source, "result": str(result)[:1000], "status": status}))
-
-def notify(msg):
-    if _hook:
+    def get_pending_commands(self) -> List[Dict[str, Any]]:
+        if not self.client: 
+            return []
         try:
-            requests.post(_hook, json={"content": msg[:1900]}, timeout=8)
+            res = self.client.table("commands").select("*").eq("status", "pending").execute()
+            return res.data if res.data else []
+        except Exception as e:
+            logger.error(f"Supabase command fetch failed: {e}")
+            return []
+            
+    def mark_command_processed(self, command_id: str, status: str = "completed", message: str = "") -> bool:
+        if not self.client: 
+            return False
+        try:
+            self.client.table("commands").update({"status": status, "message": message}).eq("id", command_id).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Supabase command update failed: {e}")
+            return False
+
+# Global singleton for easy import across modules
+bridge = DashboardBridge()
+
+def set_kv(key: str, value: dict):
+    return bridge.set_kv(key, value)
+    
+class DashboardLogHandler(logging.Handler):
+    def emit(self, record):
+        if not bridge.client: 
+            return
+        try:
+            log_entry = self.format(record)
+            bridge.client.table("logs").insert({
+                "level": record.levelname,
+                "message": log_entry,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }).execute()
         except Exception:
             pass
-
-
-class DashboardLogHandler(logging.Handler):
-    _skip = ("httpx", "httpcore", "hpack", "supabase", "postgrest", "realtime", "urllib3")
-
-    def emit(self, record):
-        if record.name.startswith(self._skip):
-            return
-        log(record.levelname, self.format(record))
-
-
-def serve_commands(handlers, every=1.5):
-    """Polls commands sent from your Phone or Laptop browser and executes them against Alpaca."""
-    def loop():
-        while True:
-            try:
-                rows = _sb.table("commands").select("*").eq("status", "pending").order("id").execute().data
-                for r in rows:
-                    _sb.table("commands").update({"status": "running"}).eq("id", r["id"]).execute()
-                    try:
-                        res, status = handlers[r["cmd"]](r.get("args") or {}), "done"
-                    except KeyError:
-                        res, status = f"No handler for {r['cmd']}", "error"
-                    except Exception as e:
-                        res, status = str(e), "error"
-                    _sb.table("commands").update({"status": status, "result": str(res or "ok")[:1000]}).eq("id", r["id"]).execute()
-                    log("INFO" if status == "done" else "ERROR", f"[Web->Alpaca] {r['cmd']} ({status}): {res}", "oms")
-                    notify(f"📱 **Web/Mobile Command** `{r['cmd']}` → `{status}`: {res or ''}")
-            except Exception as e:
-                print("command loop error:", e)
-            time.sleep(every)
-    threading.Thread(target=loop, daemon=True).start()

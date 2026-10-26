@@ -1,59 +1,35 @@
 import numpy as np
 import pandas as pd
-from statsmodels.tsa.stattools import adfuller
-
-import joblib
-from pathlib import Path
+from typing import Optional
+from quant_engine import RegimeAnalyzer
 
 class MetaLabelFilter:
-    def __init__(self):
-        # Dynamically locate the models folder
-        model_path = Path(__file__).resolve().parent.parent / "models" / "rf_meta_model.pkl"
-        
-        if model_path.exists():
-            self.model = joblib.load(model_path)
-            print("✅ AI Meta-Labeler Loaded.")
-        else:
-            self.model = None
-            print("⚠️ No trained model found. Operating in bypass mode.")
+    def __init__(self, confidence_threshold: float = 0.60):
+        self.confidence_threshold = confidence_threshold
 
     @staticmethod
-    def _calculate_hurst(series: np.ndarray, max_lag: int = 20) -> float:
-        lags = range(2, max_lag)
-        tau = [np.std(np.subtract(series[lag:], series[:-lag])) for lag in lags]
-        reg = np.polyfit(np.log(lags), np.log(tau), 1)
-        return float(reg[0])
-
-    def generate_features(self, df: pd.DataFrame) -> pd.DataFrame:
+    def generate_features(df: pd.DataFrame) -> pd.DataFrame:
         """
-        Calculates the market micro-structure features at the exact moment a signal is fired.
+        Generates strictly causal rolling features for the ML model.
+        Every metric must be lagged or rolling to prevent look-ahead bias.
         """
-        data = df.copy()
+        data = pd.DataFrame(index=df.index)
         
-        # Volatility & Momentum Features
-        data['returns_1d'] = data['close'].pct_change(1)
-        data['returns_5d'] = data['close'].pct_change(5)
-        data['volatility_20d'] = data['returns_1d'].rolling(20).std() * np.sqrt(252)
+        # 1. Price Returns (Momentum)
+        data['returns_1d'] = df['close'].pct_change(1)
+        data['returns_5d'] = df['close'].pct_change(5)
         
-        # Econometric Regime Features
-        data['sma_20'] = data['close'].rolling(20).mean()
-        data['price_to_sma'] = data['close'] / data['sma_20']
+        # 2. Volatility
+        data['volatility_20d'] = df['close'].pct_change().rolling(20).std() * np.sqrt(252)
         
-        # Rolling Hurst Exponent (Memory of the market)
-        data['hurst'] = data['close'].rolling(40).apply(self._calculate_hurst, raw=True)
+        # 3. Moving Average Convergence
+        sma_20 = df['close'].rolling(20).mean()
+        data['price_to_sma'] = (df['close'] - sma_20) / sma_20
         
-        return data.dropna()
-
-    def get_confidence_score(self, current_features: pd.Series) -> float:
-        """
-        Outputs the AI's probability (0.0 to 1.0) that the trade will hit the profit target.
-        """
-        if self.model is None:
-            return 1.0  # Pass-through if ML model isn't trained yet
-            
-        # Strictly enforce the exact 5 features the Random Forest was trained on
-        expected_features = ['returns_1d', 'returns_5d', 'volatility_20d', 'price_to_sma', 'hurst']
-        model_input = current_features[expected_features].values.reshape(1, -1)
+        # 4. Regime Diagnostics (Rolling Hurst via Log Prices)
+        data['hurst'] = RegimeAnalyzer.rolling_hurst(df['close'], window=60, max_lag=20)
         
-        probability = self.model.predict_proba(model_input)[0][1]
-        return float(probability)
+        # Shift all features forward by 1 bar to ensure strict causality at the time of prediction
+        data = data.shift(1).dropna()
+        
+        return data
