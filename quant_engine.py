@@ -32,7 +32,7 @@ DEFAULT_MODEL_PATH = MODEL_DIR / "rf_meta_model.pkl"
 for directory in (DATA_DIR, LOG_DIR, MODEL_DIR):
     directory.mkdir(parents=True, exist_ok=True)
 
-load_dotenv(dotenv_path=ROOT_DIR / ".env", override=True)
+load_dotenv(dotenv_path=ROOT_DIR / ".env", override=False)
 
 logging.basicConfig(
     filename=LOG_DIR / "trading_bot.log",
