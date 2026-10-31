@@ -3,6 +3,20 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
+
+@pytest.fixture(autouse=True)
+def _mock_paper_release_for_isolated_contracts(monkeypatch):
+    # Tests use mocked broker clients only; never enable real execution.
+    import live_paper_trader
+    from release_gate import validate_execution_release
+    monkeypatch.setattr(
+        live_paper_trader, "validate_execution_release",
+        lambda: {"execution_allowed": True, "reason": "mock test only"},
+    )
+    yield
+    monkeypatch.setattr(live_paper_trader, "validate_execution_release",
+                        validate_execution_release)
+
 import live_paper_trader
 
 
@@ -138,6 +152,8 @@ class StopWorkerLoop(BaseException):
 
 
 def test_worker_disabled_by_default_does_not_contact_any_service(monkeypatch):
+    from release_gate import validate_execution_release
+    monkeypatch.setattr(live_paper_trader, "validate_execution_release", validate_execution_release)
     monkeypatch.delenv("E1_EXECUTION_ENABLED", raising=False)
     monkeypatch.setattr(
         live_paper_trader.time, "sleep",
@@ -152,6 +168,8 @@ def test_worker_disabled_by_default_does_not_contact_any_service(monkeypatch):
 
 
 def test_restart_with_unresolved_order_blocks_claim_and_broker(monkeypatch):
+    from release_gate import validate_execution_release
+    monkeypatch.setattr(live_paper_trader, "validate_execution_release", lambda: {"execution_allowed": True})
     monkeypatch.setenv("E1_EXECUTION_ENABLED", "true")
     monkeypatch.setattr(live_paper_trader, "DASHBOARD_SYNC", True)
     bridge = MagicMock()
