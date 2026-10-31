@@ -87,6 +87,34 @@ class DashboardBridge:
             raise RuntimeError("Cannot confirm recovery state")
         return response.data
 
+    def list_unresolved_trade_commands(self):
+        """Retrieve all unresolved commands for reconciliation; never silently truncate."""
+        if not self.client:
+            raise RuntimeError("Command database unavailable")
+        statuses = ["claimed", "submitting", "uncertain", "acknowledged"]
+        records = []
+        offset = 0
+        page_size = 100
+        while True:
+            response = (
+                self.client.table("commands")
+                .select("id,cmd,status,claim_token,client_order_id,broker_order_id")
+                .eq("cmd", "submit_order")
+                .in_("status", statuses)
+                .order("id")
+                .range(offset, offset + page_size - 1)
+                .execute()
+            )
+            if response.data is None or not isinstance(response.data, list):
+                raise RuntimeError("Unable to enumerate unresolved broker orders")
+            records.extend(response.data)
+            if len(response.data) < page_size:
+                return records
+            offset += page_size
+            # A large backlog must be inspected, not silently skipped.
+            if offset >= 10000:
+                raise RuntimeError("Reconciliation backlog exceeds inspection bound")
+
     def get_pending_commands(self) -> List[Dict[str, Any]]:
         if not self.client: 
             return []
