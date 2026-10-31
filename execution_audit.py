@@ -126,6 +126,13 @@ class ExecutionAuditStore:
         try:
             conn.execute("BEGIN IMMEDIATE")
             seq, prev = self._verify_conn(conn)
+            if kind == "pre_submit_baseline":
+                existing = conn.execute(
+                    "SELECT count(*) FROM events WHERE command_id=? AND kind='pre_submit_baseline'",
+                    (command_id,),
+                ).fetchone()[0]
+                if existing:
+                    raise AuditIntegrityError("Duplicate pre-submit baseline")
             digest = _digest(seq, timestamp, command_id, client_order_id, kind, payload, prev)
             conn.execute(
                 "INSERT INTO events VALUES(?,?,?,?,?,?,?,?)",
