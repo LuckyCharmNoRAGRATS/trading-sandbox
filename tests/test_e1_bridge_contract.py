@@ -53,3 +53,30 @@ def test_bridge_returns_false_on_database_write_failure():
     bridge = bridge_with_fake_client()
     bridge.client.table.return_value.upsert.return_value.execute.side_effect = RuntimeError("database unavailable")
     assert bridge.set_kv("portfolio_state", {"equity": 100000}) is False
+
+
+def test_claim_rpc_fails_closed_without_backend():
+    bridge = bridge_with_fake_client()
+    bridge.client = None
+    import pytest
+    with pytest.raises(RuntimeError):
+        bridge.claim_next_trade_command()
+
+
+def test_claim_rpc_must_confirm_ownership(monkeypatch):
+    import pytest
+    bridge = bridge_with_fake_client()
+    bridge.client.rpc.return_value.execute.return_value.data = [
+        {"id": 5, "status": "claimed", "claim_token": "wrong"}
+    ]
+    with pytest.raises(RuntimeError, match="ownership"):
+        bridge.claim_next_trade_command()
+
+
+def test_transition_requires_single_matching_row():
+    import pytest
+    bridge = bridge_with_fake_client()
+    bridge.client.table.return_value.update.return_value.eq.return_value.eq.return_value.eq.return_value.select.return_value.execute.return_value.data = []
+    cmd = {"id": 5, "claim_token": "fake-token"}
+    with pytest.raises(RuntimeError, match="not confirmed"):
+        bridge.transition_claimed(cmd, "claimed", "submitting")
