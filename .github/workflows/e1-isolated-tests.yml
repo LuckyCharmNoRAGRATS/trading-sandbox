@@ -33,6 +33,8 @@ jobs:
       DISCORD_WEBHOOK_URL: ""
       PYTHONDONTWRITEBYTECODE: "1"
       PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      E1_EXECUTION_ENABLED: "false"
+      E1_RECONCILIATION_ENABLED: "false"
     steps:
       - name: Checkout without persisted credentials
         uses: actions/checkout@v4
@@ -55,12 +57,40 @@ jobs:
       - name: Run offline regression suite
         if: success()
         run: |
-          PYTHONPATH=tests:. python -m pytest -p e1_network_guard -q --tb=short \
+          mkdir -p test-reports
+          PYTHONPATH=tests:. python -m pytest -p e1_network_guard -q --tb=short --junitxml=test-reports/e1-pytest.xml \
             tests/test_e1_bridge_contract.py \
             tests/test_e1_risk_contract.py \
             tests/test_e1_execution_contract.py \
             tests/test_e14_reconciliation.py \
             tests/test_risk_manager.py
+      - name: Summarize Python test results
+        if: always()
+        run: |
+          python - <<'PY'
+          import os, xml.etree.ElementTree as ET
+          path = "test-reports/e1-pytest.xml"
+          if not os.path.isfile(path):
+              summary = "### E1 offline pytest\nNo JUnit result was produced; inspect preceding steps.\n"
+          else:
+              root = ET.parse(path).getroot()
+              suite = root if root.tag == "testsuite" else root.find("testsuite")
+              if suite is None:
+                  summary = "### E1 offline pytest\nUnexpected JUnit schema.\n"
+              else:
+                  summary = ("### E1 offline pytest\n"
+                             f"Tests: {suite.get('tests')} | Failures: {suite.get('failures')} "
+                             f"| Errors: {suite.get('errors')} | Skipped: {suite.get('skipped')}\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as file:
+              file.write(summary)
+          PY
+      - name: Retain isolated pytest report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e1-pytest-junit
+          path: test-reports/e1-pytest.xml
+          if-no-files-found: warn
 
   postgres-contract:
     name: Disposable PostgreSQL claim tests
@@ -93,6 +123,23 @@ jobs:
       - name: Verify SQL client
         run: psql --version
       - name: Apply E1 draft only to disposable database
-        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/e1_postgres_contract.sql
+        run: |
+          mkdir -p test-reports
+          psql -X -v ON_ERROR_STOP=1 -f tests/sql/e1_postgres_contract.sql 2>&1 | tee test-reports/postgres-migration.log
+          test "${PIPESTATUS[0]}" -eq 0
       - name: Test duplicate and competing claims
-        run: bash tests/sql/e1_concurrency.sh
+        run: |
+          bash tests/sql/e1_concurrency.sh 2>&1 | tee test-reports/postgres-claims.log
+          test "${PIPESTATUS[0]}" -eq 0
+      - name: Summarize disposable PostgreSQL job
+        if: always()
+        run: |
+          echo "### E1 disposable PostgreSQL claim tests" >> "$GITHUB_STEP_SUMMARY"
+          echo "See postgres-contract-logs artifact for migration, role and concurrency assertions." >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain PostgreSQL contract logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-contract-logs
+          path: test-reports/*.log
+          if-no-files-found: warn
