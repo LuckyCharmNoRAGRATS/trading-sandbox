@@ -99,7 +99,13 @@ class LiveExecutionEngine:
         if cmd.get("cmd") != "submit_order" or cmd.get("status") != "claimed":
             raise ValueError("Unclaimed or unsupported command")
         client_id = cmd.get("client_order_id")
-        if not isinstance(client_id, str) or not re.fullmatch(r"e1-[1-9][0-9]*", client_id):
+        if (
+            not isinstance(cmd.get("id"), int)
+            or isinstance(cmd.get("id"), bool)
+            or cmd["id"] <= 0
+            or not cmd.get("claim_token")
+            or client_id != f'e1-{cmd["id"]}'
+        ):
             raise ValueError("Missing stable broker order identifier")
         try:
             payload = cmd["args"]
