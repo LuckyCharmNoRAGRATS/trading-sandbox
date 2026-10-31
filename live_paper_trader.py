@@ -1,6 +1,8 @@
 import os
 import time
 import logging
+import math
+import re
 from datetime import datetime, timezone
 import pandas as pd
 from dotenv import load_dotenv
@@ -95,34 +97,60 @@ class LiveExecutionEngine:
         while True:
             try:
                 state = self.sync_portfolio_state()
-                # 0. Process Web Dashboard Manual Orders
-                if DASHBOARD_SYNC and dash.bridge.client:
+                # Initialize the risk gate before processing any manual command.
+                risk_engine = RiskEngine(account_equity=state["equity"], config=self.config)
+                # 0. Process Web Dashboard Manual Orders.
+                # E1.2 repairs the existing wire contract; atomic claims and broker
+                # idempotency are separate E1.3 release blockers.
+                if DASHBOARD_SYNC and dash is not None and dash.bridge.client:
                     pending_cmds = dash.bridge.get_pending_commands()
                     for cmd in pending_cmds:
-                        payload = cmd.get("payload", {})
-                        if cmd.get("command") == "submit_order":
-                            sym = payload.get("symbol", "").upper()
-                            entry = float(payload.get("entry_price", 0))
-                            stop = float(payload.get("stop_loss", 0))
-                            side = OrderSide.BUY if payload.get("side") == "buy" else OrderSide.SELL
-                            
-                            # Route manual web order strictly through the Risk Gate
+                        if cmd.get("cmd") != "submit_order":
+                            continue  # Other command types have separate consumers.
+                        try:
+                            payload = cmd.get("args")
+                            if not isinstance(payload, dict):
+                                raise ValueError("Order args must be an object")
+                            sym = payload.get("symbol")
+                            if not isinstance(sym, str):
+                                raise ValueError("Missing or invalid symbol")
+                            sym = sym.strip().upper()
+                            if not re.fullmatch(r"[A-Z][A-Z0-9.]{0,9}", sym):
+                                raise ValueError("Invalid symbol")
+                            raw_side = payload.get("side")
+                            if not isinstance(raw_side, str) or raw_side.strip().upper() not in ("BUY", "SELL"):
+                                raise ValueError("Invalid order side")
+                            side = OrderSide(raw_side.strip().lower())
+                            entry = float(payload["entry_price"])
+                            stop = float(payload["stop_loss"])
+                            if not math.isfinite(entry) or not math.isfinite(stop) or entry <= 0 or stop <= 0:
+                                raise ValueError("Prices must be finite and positive")
+                            if (side == OrderSide.BUY and stop >= entry) or (side == OrderSide.SELL and stop <= entry):
+                                raise ValueError("Stop price incompatible with trade side")
+
                             approved_shares = risk_engine.validate_and_size_order(
                                 symbol=sym, entry_price=entry, stop_loss_price=stop,
                                 open_positions=state["open_symbols"], pending_orders=state["pending_symbols"],
                                 current_portfolio_exposure=state["portfolio_exposure"], start_of_day_equity=state["start_of_day_equity"]
                             )
-                            
-                            if approved_shares > 0:
-                                order = MarketOrderRequest(symbol=sym, qty=approved_shares, side=side, time_in_force=TimeInForce.DAY)
-                                self.trading_client.submit_order(order)
-                                dash.bridge.mark_command_processed(cmd["id"], status="completed", message=f"Order routed for {approved_shares} shares.")
-                                logging.info(f"[{sym}] MANUAL WEB ORDER APPROVED: {approved_shares} shares.")
-                            else:
+                            if approved_shares <= 0:
                                 dash.bridge.mark_command_processed(cmd["id"], status="failed", message="Risk Engine rejected the manual order.")
-                                logging.warning(f"[{sym}] MANUAL WEB ORDER REJECTED by RiskEngine.")
-                                
-                risk_engine = RiskEngine(account_equity=state["equity"], config=self.config)
+                                continue
+                            request = MarketOrderRequest(
+                                symbol=sym, qty=approved_shares, side=side, time_in_force=TimeInForce.DAY
+                            )
+                            response = self.trading_client.submit_order(request)
+                            # Broker acceptance is not a fill; do not mark as filled.
+                            dash.bridge.mark_command_processed(
+                                cmd["id"], status="completed",
+                                message=f"Order accepted by broker: {response.id}"
+                            )
+                            logging.info("[%s] Manual order submitted, id=%s", sym, response.id)
+                        except (ValueError, KeyError, TypeError, OverflowError) as exc:
+                            logging.warning("Manual command %s rejected: %s", cmd.get("id"), exc)
+                            dash.bridge.mark_command_processed(
+                                cmd["id"], status="failed", message=f"Invalid order: {exc}"
+                            )
 
                 for symbol in self.watchlist:
                     signal = self.generate_live_signals(symbol)
