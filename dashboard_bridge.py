@@ -80,7 +80,7 @@ class DashboardBridge:
         response = (
             self.client.table("commands").select("id,status,client_order_id")
             .eq("cmd", "submit_order")
-            .in_("status", ["claimed", "submitting", "uncertain"])
+            .in_("status", ["claimed", "submitting", "uncertain", "acknowledged"])
             .limit(1).execute()
         )
         if response.data is None:
