@@ -38,11 +38,19 @@ except (ImportError, ModuleNotFoundError, KeyError) as e:
 class LiveExecutionEngine:
     def __init__(self):
         # Verify release configuration before constructing any broker clients.
-        validate_execution_release()
+        release = validate_execution_release()
         self.config = QuantConfig()
-        self.trading_client = TradingClient(self.config.api_key, self.config.secret_key, paper=True)
-        self.data_layer = DataLayer(self.config)
-        self.meta_model = load_meta_model()
+        self.trading_client = None
+        self.data_layer = None
+        self.meta_model = None
+        # Disabled workers must not even construct order-capable clients.
+        if release["execution_allowed"]:
+            self.require_audit_store()
+            self.trading_client = TradingClient(
+                self.config.api_key, self.config.secret_key, paper=True
+            )
+            self.data_layer = DataLayer(self.config)
+            self.meta_model = load_meta_model()
         
         # State Persistence
         self.watchlist = ["SPY", "QQQ", "GLD", "TLT"]
@@ -118,6 +126,8 @@ class LiveExecutionEngine:
 
         This requires the unapplied E1.3 schema. All broker calls use paper=True.
         """
+        if not validate_execution_release()["execution_allowed"]:
+            raise AuditIntegrityError("Release gate denies direct order processing")
         from alpaca.trading.requests import MarketOrderRequest
         if cmd.get("cmd") != "submit_order" or cmd.get("status") != "claimed":
             raise ValueError("Unclaimed or unsupported command")
@@ -326,6 +336,8 @@ class LiveExecutionEngine:
                 if not validate_execution_release()["execution_allowed"]:
                     time.sleep(60)
                     continue
+                if self.trading_client is None or self.data_layer is None:
+                    raise RuntimeError("Execution client not initialized; restart required")
                 if not DASHBOARD_SYNC or dash is None or not dash.bridge.client:
                     raise RuntimeError("Dashboard bridge required; fail closed")
                 bridge = dash.bridge
