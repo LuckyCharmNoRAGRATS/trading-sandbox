@@ -13,6 +13,7 @@ from alpaca.trading.enums import OrderSide, TimeInForce
 
 from quant_engine import QuantConfig, RiskEngine, DataLayer, load_meta_model
 from discord_notifier import notify_system_status, notify_error
+from portfolio_reconciliation import validate_broker_snapshot, assert_can_claim_new_trade
 
 # 1. Environment & Logging Setup
 load_dotenv(override=True)
@@ -48,18 +49,13 @@ class LiveExecutionEngine:
         positions = self.trading_client.get_all_positions()
         orders = self.trading_client.get_orders()
         
+        # E1.5: never substitute partial/invalid broker state with zero exposure.
+        state = validate_broker_snapshot(
+            account, positions, orders,
+            max_exposure_pct=self.config.max_portfolio_exposure_pct,
+        )
         self.active_positions = {p.symbol: float(p.qty) for p in positions}
-        pending_symbols = [o.symbol for o in orders]
-        
-        state = {
-            "equity": float(account.equity),
-            "start_of_day_equity": float(account.last_equity),
-            "buying_power": float(account.buying_power),
-            "open_symbols": list(self.active_positions.keys()),
-            "pending_symbols": pending_symbols,
-            "portfolio_exposure": sum(float(p.market_value) for p in positions)
-        }
-        
+
         if DASHBOARD_SYNC and dash is not None:
             dash.set_kv("portfolio_state", state)
             
@@ -240,6 +236,9 @@ class LiveExecutionEngine:
                 state = self.sync_portfolio_state()
                 if state["equity"] <= 0:
                     raise RuntimeError("Invalid account equity")
+                # Open/unreconciled orders reserve risk and block new claims;
+                # no automatic portfolio clearance is authorized in E1.5.
+                assert_can_claim_new_trade(state)
                 risk_engine = RiskEngine(account_equity=state["equity"], config=self.config)
                 cmd = bridge.claim_next_trade_command()
                 if cmd is not None:
