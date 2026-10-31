@@ -42,6 +42,18 @@ logging.basicConfig(
 )
 
 
+@dataclass(frozen=True)
+class QuantConfig:
+    api_key: str = os.getenv("ALPACA_API_KEY", "")
+    secret_key: str = os.getenv("ALPACA_SECRET_KEY", "")
+    discord_webhook: str = os.getenv("DISCORD_WEBHOOK_URL", "")
+    max_risk_per_trade: float = float(os.getenv("MAX_RISK_PER_TRADE", 0.01))
+    max_position_pct: float = float(os.getenv("MAX_POSITION_SIZE", 0.05))
+    max_daily_drawdown: float = float(os.getenv("MAX_DAILY_DRAWDOWN", 0.03))
+    max_portfolio_exposure_pct: float = float(os.getenv("MAX_PORTFOLIO_EXPOSURE", 0.50)) # Max 50% of equity deployed
+    spread_slippage_bps: float = 0.0008
+
+
 # Lazy ML model cache (never loaded at import time)
 _CACHED_META_MODEL: Any = None
 
@@ -210,17 +222,6 @@ from dataclasses import dataclass
 from typing import List, Dict, Optional
 import math
 import logging
-
-@dataclass(frozen=True)
-class QuantConfig:
-    api_key: str = os.getenv("ALPACA_API_KEY", "")
-    secret_key: str = os.getenv("ALPACA_SECRET_KEY", "")
-    discord_webhook: str = os.getenv("DISCORD_WEBHOOK_URL", "")
-    max_risk_per_trade: float = float(os.getenv("MAX_RISK_PER_TRADE", 0.01))
-    max_position_pct: float = float(os.getenv("MAX_POSITION_SIZE", 0.05))
-    max_daily_drawdown: float = float(os.getenv("MAX_DAILY_DRAWDOWN", 0.03))
-    max_portfolio_exposure_pct: float = float(os.getenv("MAX_PORTFOLIO_EXPOSURE", 0.50)) # Max 50% of equity deployed
-    spread_slippage_bps: float = 0.0008
 
 class RiskEngine:
     def __init__(self, account_equity: float, config: Optional[QuantConfig] = None):
