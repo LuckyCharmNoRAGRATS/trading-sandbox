@@ -11,6 +11,20 @@ import sqlite3
 
 import pytest
 
+@pytest.fixture(autouse=True)
+def _mock_paper_release_for_isolated_contracts(monkeypatch):
+    # Tests use mocked broker clients only; never enable real execution.
+    import live_paper_trader
+    from release_gate import validate_execution_release
+    monkeypatch.setattr(
+        live_paper_trader, "validate_execution_release",
+        lambda: {"execution_allowed": True, "reason": "mock test only"},
+    )
+    yield
+    monkeypatch.setattr(live_paper_trader, "validate_execution_release",
+                        validate_execution_release)
+
+
 from execution_audit import ExecutionAuditStore, AuditIntegrityError
 from live_paper_trader import LiveExecutionEngine
 from quant_engine import QuantConfig, RiskEngine
@@ -181,6 +195,8 @@ def test_broker_submission_happens_only_after_intent_and_state_transition(tmp_pa
 
 
 def test_worker_stays_in_disabled_mode(monkeypatch, tmp_path):
+    from release_gate import validate_execution_release
+    monkeypatch.setattr(__import__("live_paper_trader"), "validate_execution_release", validate_execution_release)
     import live_paper_trader
     worker, broker, bridge, state, risk = setup(tmp_path)
     monkeypatch.delenv("E1_EXECUTION_ENABLED", raising=False)
