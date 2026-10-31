@@ -14,6 +14,7 @@ from alpaca.trading.enums import OrderSide, TimeInForce
 from quant_engine import QuantConfig, RiskEngine, DataLayer, load_meta_model
 from discord_notifier import notify_system_status, notify_error
 from portfolio_reconciliation import validate_broker_snapshot, assert_can_claim_new_trade
+from reconciliation_audit import audit_order_position
 
 # 1. Environment & Logging Setup
 load_dotenv(override=True)
@@ -213,6 +214,24 @@ class LiveExecutionEngine:
                 )
             outcomes.append((cmd["id"], "matched_still_blocked"))
         return outcomes
+
+    def audit_order_against_portfolio(
+        self, order, expected_client_id, baseline_quantity, positions,
+        open_orders, *, exclusive_symbol_activity=False, previous_order=None,
+    ):
+        """E1.7 read-only audit; NEVER clears claimed or acknowledged commands.
+
+        Broker snapshots and the pre-submit baseline are supplied by the caller.
+        A future separately approved release may persist signed audit records.
+        """
+        return audit_order_position(
+            order, expected_client_id,
+            baseline_quantity=baseline_quantity,
+            broker_positions=positions,
+            broker_open_orders=open_orders,
+            exclusive_symbol_activity=exclusive_symbol_activity,
+            previous_order=previous_order,
+        )
 
     def execute_loop(self):
         logging.info("E1.3 execution worker started (automated entries disabled)")
