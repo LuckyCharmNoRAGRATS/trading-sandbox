@@ -90,115 +90,97 @@ class LiveExecutionEngine:
             
         return {"action": "HOLD"}
 
-    def execute_loop(self):
-        logging.info("Live Execution Engine Started.")
-        notify_system_status(status_text="ONLINE", buying_power=0.0)
+    def process_claimed_order(self, cmd, bridge, state, risk_engine):
+        """Process ONE owned command, never retry after a possible broker submission.
 
+        This requires the unapplied E1.3 schema. All broker calls use paper=True.
+        """
+        from alpaca.trading.requests import MarketOrderRequest
+        if cmd.get("cmd") != "submit_order" or cmd.get("status") != "claimed":
+            raise ValueError("Unclaimed or unsupported command")
+        client_id = cmd.get("client_order_id")
+        if not isinstance(client_id, str) or not re.fullmatch(r"e1-[1-9][0-9]*", client_id):
+            raise ValueError("Missing stable broker order identifier")
+        try:
+            payload = cmd["args"]
+            if not isinstance(payload, dict):
+                raise ValueError("Invalid order arguments")
+            symbol = payload["symbol"]
+            if not isinstance(symbol, str):
+                raise ValueError("Invalid symbol")
+            symbol = symbol.strip().upper()
+            if not re.fullmatch(r"[A-Z][A-Z0-9.]{0,9}", symbol):
+                raise ValueError("Invalid symbol")
+            side_text = payload["side"]
+            if not isinstance(side_text, str) or side_text.strip().upper() not in ("BUY", "SELL"):
+                raise ValueError("Invalid side")
+            side = OrderSide(side_text.strip().lower())
+            entry, stop = float(payload["entry_price"]), float(payload["stop_loss"])
+            if not all(math.isfinite(v) and v > 0 for v in (entry, stop)):
+                raise ValueError("Prices must be finite and positive")
+            if (side == OrderSide.BUY and stop >= entry) or (side == OrderSide.SELL and stop <= entry):
+                raise ValueError("Stop inconsistent with side")
+            shares = risk_engine.validate_and_size_order(
+                symbol=symbol, entry_price=entry, stop_loss_price=stop,
+                open_positions=state["open_symbols"], pending_orders=state["pending_symbols"],
+                current_portfolio_exposure=state["portfolio_exposure"],
+                start_of_day_equity=state["start_of_day_equity"],
+            )
+            if shares <= 0:
+                raise ValueError("Risk gate rejected order")
+        except (KeyError, TypeError, ValueError, OverflowError) as exc:
+            bridge.transition_claimed(cmd, "claimed", "failed", message=f"Rejected: {exc}")
+            return None
+
+        # This durable pre-submit transition MUST succeed before contacting broker.
+        bridge.transition_claimed(cmd, "claimed", "submitting")
+        request = MarketOrderRequest(
+            symbol=symbol, qty=shares, side=side, time_in_force=TimeInForce.DAY,
+            client_order_id=client_id,
+        )
+        try:
+            accepted = self.trading_client.submit_order(request)
+        except Exception:
+            # The broker may have accepted the order before transport failed.
+            # NEVER retry automatically; quarantine pending manual reconciliation.
+            try:
+                bridge.transition_claimed(cmd, "submitting", "uncertain",
+                                          message="Broker submission uncertain; reconcile by client_order_id")
+            except Exception:
+                logging.exception("Unable to persist uncertain command: %s", cmd["id"])
+            raise
+        # If acknowledgement persistence fails, state remains 'submitting'.
+        # Future claims are blocked pending broker reconciliation.
+        bridge.transition_claimed(cmd, "submitting", "acknowledged",
+                                  message="Broker accepted, fill not verified",
+                                  broker_id=str(accepted.id))
+        return accepted
+
+    def execute_loop(self):
+        logging.info("E1.3 execution worker started (automated entries disabled)")
         while True:
             try:
+                # Disabled until migration, reconciliation tests, and release approval.
+                if os.getenv("E1_EXECUTION_ENABLED") != "true":
+                    time.sleep(60)
+                    continue
+                if not DASHBOARD_SYNC or dash is None or not dash.bridge.client:
+                    raise RuntimeError("Dashboard bridge required; fail closed")
+                bridge = dash.bridge
+                if bridge.unresolved_trade_commands():
+                    logging.critical("Unresolved trade commands: submissions halted")
+                    time.sleep(60)
+                    continue
                 state = self.sync_portfolio_state()
-                # Initialize the risk gate before processing any manual command.
+                if state["equity"] <= 0:
+                    raise RuntimeError("Invalid account equity")
                 risk_engine = RiskEngine(account_equity=state["equity"], config=self.config)
-                # 0. Process Web Dashboard Manual Orders.
-                # E1.2 repairs the existing wire contract; atomic claims and broker
-                # idempotency are separate E1.3 release blockers.
-                if DASHBOARD_SYNC and dash is not None and dash.bridge.client:
-                    pending_cmds = dash.bridge.get_pending_commands()
-                    for cmd in pending_cmds:
-                        if cmd.get("cmd") != "submit_order":
-                            continue  # Other command types have separate consumers.
-                        try:
-                            payload = cmd.get("args")
-                            if not isinstance(payload, dict):
-                                raise ValueError("Order args must be an object")
-                            sym = payload.get("symbol")
-                            if not isinstance(sym, str):
-                                raise ValueError("Missing or invalid symbol")
-                            sym = sym.strip().upper()
-                            if not re.fullmatch(r"[A-Z][A-Z0-9.]{0,9}", sym):
-                                raise ValueError("Invalid symbol")
-                            raw_side = payload.get("side")
-                            if not isinstance(raw_side, str) or raw_side.strip().upper() not in ("BUY", "SELL"):
-                                raise ValueError("Invalid order side")
-                            side = OrderSide(raw_side.strip().lower())
-                            entry = float(payload["entry_price"])
-                            stop = float(payload["stop_loss"])
-                            if not math.isfinite(entry) or not math.isfinite(stop) or entry <= 0 or stop <= 0:
-                                raise ValueError("Prices must be finite and positive")
-                            if (side == OrderSide.BUY and stop >= entry) or (side == OrderSide.SELL and stop <= entry):
-                                raise ValueError("Stop price incompatible with trade side")
-
-                            approved_shares = risk_engine.validate_and_size_order(
-                                symbol=sym, entry_price=entry, stop_loss_price=stop,
-                                open_positions=state["open_symbols"], pending_orders=state["pending_symbols"],
-                                current_portfolio_exposure=state["portfolio_exposure"], start_of_day_equity=state["start_of_day_equity"]
-                            )
-                            if approved_shares <= 0:
-                                dash.bridge.mark_command_processed(cmd["id"], status="failed", message="Risk Engine rejected the manual order.")
-                                continue
-                            request = MarketOrderRequest(
-                                symbol=sym, qty=approved_shares, side=side, time_in_force=TimeInForce.DAY
-                            )
-                            response = self.trading_client.submit_order(request)
-                            # Broker acceptance is not a fill; do not mark as filled.
-                            dash.bridge.mark_command_processed(
-                                cmd["id"], status="completed",
-                                message=f"Order accepted by broker: {response.id}"
-                            )
-                            logging.info("[%s] Manual order submitted, id=%s", sym, response.id)
-                        except (ValueError, KeyError, TypeError, OverflowError) as exc:
-                            logging.warning("Manual command %s rejected: %s", cmd.get("id"), exc)
-                            dash.bridge.mark_command_processed(
-                                cmd["id"], status="failed", message=f"Invalid order: {exc}"
-                            )
-
-                for symbol in self.watchlist:
-                    signal = self.generate_live_signals(symbol)
-                    
-                    # 1. Automated Exit Logic
-                    if signal["action"] == "EXIT" and symbol in state["open_symbols"]:
-                        logging.info(f"[{symbol}] Mean reversion achieved (Z: {signal.get('z', 0):.2f}). Exiting position.")
-                        self.trading_client.close_position(symbol)
-                        continue
-                        
-                    # 2. Entry Logic
-                    if signal["action"] in ["BUY", "SELL"]:
-                        side = OrderSide.BUY if signal["action"] == "BUY" else OrderSide.SELL
-                        
-                        # AI Meta-Labeler Veto
-                        if self.meta_model:
-                            # Construct features matching training schema
-                            features = pd.DataFrame([{
-                                'returns_1d': 0.0, 'returns_5d': 0.0, 
-                                'volatility_20d': 0.0, 'price_to_sma': 0.0, 'hurst': 0.0
-                            }])
-                            ai_prob = self.meta_model.predict_proba(features)[0][1]
-                            if ai_prob < 0.60:
-                                logging.info(f"[{symbol}] AI VETO: Confidence {ai_prob:.2%} < 60%.")
-                                continue
-                        
-                        # Centralized Risk Gate
-                        shares = risk_engine.validate_and_size_order(
-                            symbol=symbol,
-                            entry_price=signal["price"],
-                            stop_loss_price=signal["stop"],
-                            open_positions=state["open_symbols"],
-                            pending_orders=state["pending_symbols"],
-                            current_portfolio_exposure=state["portfolio_exposure"],
-                            start_of_day_equity=state["start_of_day_equity"]
-                        )
-                        
-                        if shares > 0:
-                            order = MarketOrderRequest(
-                                symbol=symbol, qty=shares, side=side, time_in_force=TimeInForce.DAY
-                            )
-                            self.trading_client.submit_order(order)
-                            logging.info(f"[{symbol}] ORDER EXECUTED: {side.value} {shares} shares @ ~${signal['price']:.2f}")
-
-            except Exception as e:
-                logging.error(f"Execution loop exception: {e}")
-                notify_error(f"Engine Crash: {e}")
-            
+                cmd = bridge.claim_next_trade_command()
+                if cmd is not None:
+                    self.process_claimed_order(cmd, bridge, state, risk_engine)
+                # Automated strategy orders intentionally disabled in E1.3.1.
+            except Exception:
+                logging.exception("E1 execution halted for this cycle; no automatic retry")
             time.sleep(60)
 
 if __name__ == "__main__":
