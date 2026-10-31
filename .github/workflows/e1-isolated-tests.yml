@@ -66,6 +66,7 @@ jobs:
             tests/test_e19_execution_recovery.py \
             tests/test_e110_safety_acceptance.py \
             tests/test_e111_release_gate.py \
+            tests/test_e112_independent_safety.py \
             tests/test_risk_manager.py
       - name: Run offline regression suite
         if: success()
@@ -83,6 +84,7 @@ jobs:
             tests/test_e19_execution_recovery.py \
             tests/test_e110_safety_acceptance.py \
             tests/test_e111_release_gate.py \
+            tests/test_e112_independent_safety.py \
             tests/test_risk_manager.py
       - name: Summarize Python test results
         if: always()
