@@ -42,17 +42,6 @@ logging.basicConfig(
 )
 
 
-@dataclass(frozen=True)
-class QuantConfig:
-    api_key: str = os.getenv("ALPACA_API_KEY", "")
-    secret_key: str = os.getenv("ALPACA_SECRET_KEY", "")
-    discord_webhook: str = os.getenv("DISCORD_WEBHOOK_URL", "")
-    max_risk_per_trade: float = float(os.getenv("MAX_RISK_PER_TRADE", 0.01))
-    max_position_pct: float = float(os.getenv("MAX_POSITION_SIZE", 0.05))
-    max_daily_drawdown: float = float(os.getenv("MAX_DAILY_DRAWDOWN", 0.03))
-    spread_slippage_bps: float = 0.0008  # 8 bps round-trip friction
-
-
 # Lazy ML model cache (never loaded at import time)
 _CACHED_META_MODEL: Any = None
 
@@ -248,8 +237,8 @@ class RiskEngine:
         return True
 
     def size_position(self, entry_price: float, stop_loss_price: float) -> int:
-        if entry_price <= 0 or stop_loss_price <= 0:
-            raise ValueError("Prices must be positive.")
+        if not (math.isfinite(entry_price) and math.isfinite(stop_loss_price)) or entry_price <= 0 or stop_loss_price <= 0:
+            raise ValueError("Prices must be finite and positive.")
         risk_per_share = abs(entry_price - stop_loss_price)
         if risk_per_share == 0:
             return 0
