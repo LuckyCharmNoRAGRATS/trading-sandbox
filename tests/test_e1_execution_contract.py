@@ -25,9 +25,11 @@ def fake_context():
         live_paper_trader.LiveExecutionEngine
     )
     worker.trading_client = broker
+    worker.audit_store = MagicMock()
     state = dict(
         equity=100000.0, start_of_day_equity=100000.0,
-        open_symbols=[], pending_symbols=[], portfolio_exposure=0.0
+        open_symbols=[], pending_symbols=[], portfolio_exposure=0.0,
+        snapshot_verified=True, position_quantities={}
     )
     return worker, bridge, broker, state, risk
 
