@@ -15,6 +15,7 @@ from quant_engine import QuantConfig, RiskEngine, DataLayer, load_meta_model
 from discord_notifier import notify_system_status, notify_error
 from portfolio_reconciliation import validate_broker_snapshot, assert_can_claim_new_trade
 from reconciliation_audit import audit_order_position
+from execution_audit import ExecutionAuditStore, AuditIntegrityError
 
 # 1. Environment & Logging Setup
 load_dotenv(override=True)
@@ -232,6 +233,34 @@ class LiveExecutionEngine:
             exclusive_symbol_activity=exclusive_symbol_activity,
             previous_order=previous_order,
         )
+
+    def record_reconciliation_evidence(
+        self, audit_db_path, command_id, client_order_id, *,
+        baseline=None, broker_order=None, portfolio_snapshot=None,
+        reconciliation_report=None,
+    ):
+        """E1.8 explicit evidence entrypoint. Does not contact broker/DB or clear orders.
+
+        The baseline is a pre-submission observation supplied by a caller. This
+        method cannot retroactively prove when a baseline was actually taken.
+        """
+        store = ExecutionAuditStore(audit_db_path)
+        supplied = [
+            ("pre_submit_baseline", baseline),
+            ("broker_order_snapshot", broker_order),
+            ("portfolio_snapshot", portfolio_snapshot),
+            ("reconciliation_report", reconciliation_report),
+        ]
+        provided = [(kind, record) for kind, record in supplied if record is not None]
+        if len(provided) != 1:
+            raise AuditIntegrityError("Record exactly one event at a time")
+        kind, record = provided[0]
+        if kind == "pre_submit_baseline":
+            if store.history(command_id):
+                raise AuditIntegrityError("Baseline must precede all other command evidence")
+        else:
+            store.baseline(command_id)
+        return store.append(command_id, client_order_id, kind, record)
 
     def execute_loop(self):
         logging.info("E1.3 execution worker started (automated entries disabled)")
