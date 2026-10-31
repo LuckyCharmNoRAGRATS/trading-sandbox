@@ -166,23 +166,23 @@ class LiveExecutionEngine:
         quantities = state.get("position_quantities")
         if not isinstance(quantities, dict):
             raise AuditIntegrityError("Position quantities missing")
-        if sym in quantities:
-            baseline_qty = quantities[sym]
-        elif sym not in state["open_symbols"]:
+        if symbol in quantities:
+            baseline_qty = quantities[symbol]
+        elif symbol not in state["open_symbols"]:
             baseline_qty = "0"
         else:
             raise AuditIntegrityError("Open position missing from validated quantities")
         if store.history(cmd["id"]):
             raise AuditIntegrityError("Command already has execution evidence; no resubmission")
         store.append(cmd["id"], client_id, "pre_submit_baseline", {
-            "client_order_id": client_id, "symbol": sym,
+            "client_order_id": client_id, "symbol": symbol,
             "position_qty": str(baseline_qty),
             "approved_quantity": str(shares), "side": side.value,
         })
         # Database transition and local intent must both be confirmed before broker I/O.
         bridge.transition_claimed(cmd, "claimed", "submitting")
         store.append(cmd["id"], client_id, "submission_intent", {
-            "symbol": sym, "quantity": str(shares), "side": side.value,
+            "symbol": symbol, "quantity": str(shares), "side": side.value,
         })
         request = MarketOrderRequest(
             symbol=symbol, qty=shares, side=side, time_in_force=TimeInForce.DAY,
