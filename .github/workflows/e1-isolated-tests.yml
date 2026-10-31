@@ -15,6 +15,7 @@ on:
       - "execution_audit.py"
       - "release_gate.py"
       - "docs/E1_11_RELEASE_READINESS.md"
+      - "docs/E1_12_INDEPENDENT_SAFETY_ASSESSMENT.md"
       - ".github/workflows/e1-isolated-tests.yml"
       - "migrations/DRAFT_e1_3_1_command_claiming.sql"
 
