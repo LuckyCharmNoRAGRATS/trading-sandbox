@@ -10,6 +10,7 @@ on:
       - "quant_engine.py"
       - "live_paper_trader.py"
       - ".github/workflows/e1-isolated-tests.yml"
+      - "migrations/DRAFT_e1_3_1_command_claiming.sql"
 
 permissions:
   contents: read
@@ -58,3 +59,38 @@ jobs:
             tests/test_e1_risk_contract.py \
             tests/test_e1_execution_contract.py \
             tests/test_risk_manager.py
+
+  postgres-contract:
+    name: Disposable PostgreSQL claim tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: e1_contract_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: e1_disposable_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d e1_contract_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: e1_disposable_only
+      PGDATABASE: e1_contract_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify SQL client
+        run: psql --version
+      - name: Apply E1 draft only to disposable database
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/e1_postgres_contract.sql
+      - name: Test duplicate and competing claims
+        run: bash tests/sql/e1_concurrency.sh
