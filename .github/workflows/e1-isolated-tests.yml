@@ -9,6 +9,7 @@ on:
       - "dashboard_bridge.py"
       - "quant_engine.py"
       - "live_paper_trader.py"
+      - "portfolio_reconciliation.py"
       - ".github/workflows/e1-isolated-tests.yml"
       - "migrations/DRAFT_e1_3_1_command_claiming.sql"
 
@@ -53,6 +54,7 @@ jobs:
             tests/test_e1_risk_contract.py \
             tests/test_e1_execution_contract.py \
             tests/test_e14_reconciliation.py \
+            tests/test_e15_portfolio.py \
             tests/test_risk_manager.py
       - name: Run offline regression suite
         if: success()
@@ -63,6 +65,7 @@ jobs:
             tests/test_e1_risk_contract.py \
             tests/test_e1_execution_contract.py \
             tests/test_e14_reconciliation.py \
+            tests/test_e15_portfolio.py \
             tests/test_risk_manager.py
       - name: Summarize Python test results
         if: always()
