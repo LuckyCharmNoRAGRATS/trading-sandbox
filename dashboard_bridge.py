@@ -28,7 +28,7 @@ class DashboardBridge:
         if not self.client: 
             return False
         try:
-            self.client.table("kv").upsert({"key": key, "value": value}).execute()
+            self.client.table("kv").upsert({"key": key, "data": value}).execute()
             return True
         except Exception as e:
             logger.error(f"Supabase KV write failed: {e}")
@@ -48,7 +48,7 @@ class DashboardBridge:
         if not self.client: 
             return False
         try:
-            self.client.table("commands").update({"status": status, "message": message}).eq("id", command_id).execute()
+            self.client.table("commands").update({"status": status, "result": message}).eq("id", command_id).execute()
             return True
         except Exception as e:
             logger.error(f"Supabase command update failed: {e}")
@@ -68,8 +68,8 @@ class DashboardLogHandler(logging.Handler):
             log_entry = self.format(record)
             bridge.client.table("logs").insert({
                 "level": record.levelname,
-                "message": log_entry,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "msg": log_entry,
+                "ts": datetime.now(timezone.utc).isoformat()
             }).execute()
         except Exception:
             pass
