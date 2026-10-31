@@ -34,6 +34,59 @@ class DashboardBridge:
             logger.error(f"Supabase KV write failed: {e}")
             return False
 
+    def claim_next_trade_command(self):
+        """Atomic RPC claim. Missing migration, database or RPC errors fail closed."""
+        from uuid import uuid4
+        if not self.client:
+            raise RuntimeError("Command database unavailable")
+        token = str(uuid4())
+        response = self.client.rpc(
+            "claim_next_trade_command", {"p_claim_token": token}
+        ).execute()
+        records = response.data or []
+        if len(records) > 1:
+            raise RuntimeError("Claim RPC returned multiple commands")
+        if not records:
+            return None
+        cmd = records[0]
+        if cmd.get("claim_token") != token or cmd.get("status") != "claimed":
+            raise RuntimeError("Invalid command claim ownership")
+        return cmd
+
+    def transition_claimed(self, command, expected_status, new_status, message="", broker_id=None):
+        """Compare-and-swap state with owner token; no zero-row success."""
+        if not self.client or not command.get("claim_token"):
+            raise RuntimeError("Cannot update without database and claim token")
+        payload = {"status": new_status, "result": message}
+        if new_status == "submitting":
+            payload["submitted_at"] = datetime.now(timezone.utc).isoformat()
+        if broker_id is not None:
+            payload["broker_order_id"] = str(broker_id)
+        rows = (
+            self.client.table("commands").update(payload)
+            .eq("id", command["id"])
+            .eq("claim_token", command["claim_token"])
+            .eq("status", expected_status)
+            .select("id").execute()
+        ).data
+        if rows is None or len(rows) != 1 or rows[0].get("id") != command["id"]:
+            raise RuntimeError("Command state transition not confirmed")
+        return True
+
+    def unresolved_trade_commands(self):
+        """Read only; any unresolved trade blocks further risk-increasing orders."""
+        if not self.client:
+            raise RuntimeError("Command database unavailable")
+        response = (
+            self.client.table("commands").select("id,status,client_order_id")
+            .eq("cmd", "submit_order")
+            .in_("status", ["claimed", "submitting", "uncertain"])
+            .limit(1).execute()
+        )
+        if response.data is None:
+            raise RuntimeError("Cannot confirm recovery state")
+        return response.data
+
     def get_pending_commands(self) -> List[Dict[str, Any]]:
         if not self.client: 
             return []
