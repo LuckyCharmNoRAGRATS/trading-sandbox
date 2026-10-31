@@ -27,7 +27,7 @@ BEGIN
  -- Fail closed on ANY unresolved prior submission. No lease-based automatic retries.
  IF EXISTS (SELECT 1 FROM public.commands
    WHERE cmd = 'submit_order'
-   AND status IN ('claimed','submitting','uncertain')) THEN
+   AND status IN ('claimed','submitting','uncertain','acknowledged')) THEN
    RETURN;
  END IF;
  RETURN QUERY
