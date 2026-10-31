@@ -88,6 +88,28 @@ class LiveExecutionEngine:
             
         return {"action": "HOLD"}
 
+    def require_audit_store(self):
+        """Persistent audit evidence is mandatory even for direct process calls."""
+        existing = getattr(self, "audit_store", None)
+        if existing is not None:
+            existing.verify()
+            return existing
+        path = os.getenv("E1_AUDIT_DB_PATH")
+        if not path:
+            raise AuditIntegrityError("E1_AUDIT_DB_PATH required; execution fail closed")
+        store = ExecutionAuditStore(path)
+        store.verify()
+        self.audit_store = store
+        return store
+
+    def validate_restart_audit(self, bridge):
+        """Audit every unresolved command before further activity, no auto-release."""
+        store = self.require_audit_store()
+        unresolved = bridge.list_unresolved_trade_commands()
+        for command in unresolved:
+            store.recover_command(command["id"], command["client_order_id"])
+        return {"unresolved_count": len(unresolved), "clearance_authorized": False}
+
     def process_claimed_order(self, cmd, bridge, state, risk_engine):
         """Process ONE owned command, never retry after a possible broker submission.
 
@@ -136,8 +158,32 @@ class LiveExecutionEngine:
             bridge.transition_claimed(cmd, "claimed", "failed", message=f"Rejected: {exc}")
             return None
 
-        # This durable pre-submit transition MUST succeed before contacting broker.
+        store = self.require_audit_store()
+        # Provenance: only a validated, complete portfolio snapshot can supply
+        # the pre-order baseline. Never infer a missing position from partial data.
+        if state.get("snapshot_verified") is not True:
+            raise AuditIntegrityError("Unverified portfolio snapshot")
+        quantities = state.get("position_quantities")
+        if not isinstance(quantities, dict):
+            raise AuditIntegrityError("Position quantities missing")
+        if sym in quantities:
+            baseline_qty = quantities[sym]
+        elif sym not in state["open_symbols"]:
+            baseline_qty = "0"
+        else:
+            raise AuditIntegrityError("Open position missing from validated quantities")
+        if store.history(cmd["id"]):
+            raise AuditIntegrityError("Command already has execution evidence; no resubmission")
+        store.append(cmd["id"], client_id, "pre_submit_baseline", {
+            "client_order_id": client_id, "symbol": sym,
+            "position_qty": str(baseline_qty),
+            "approved_quantity": str(shares), "side": side.value,
+        })
+        # Database transition and local intent must both be confirmed before broker I/O.
         bridge.transition_claimed(cmd, "claimed", "submitting")
+        store.append(cmd["id"], client_id, "submission_intent", {
+            "symbol": sym, "quantity": str(shares), "side": side.value,
+        })
         request = MarketOrderRequest(
             symbol=symbol, qty=shares, side=side, time_in_force=TimeInForce.DAY,
             client_order_id=client_id,
@@ -145,6 +191,11 @@ class LiveExecutionEngine:
         try:
             accepted = self.trading_client.submit_order(request)
         except Exception:
+            try:
+                store.append(cmd["id"], client_id, "submission_uncertain",
+                             {"reason": "broker_call_exception"})
+            except Exception:
+                logging.exception("Unable to persist broker uncertainty in audit store")
             # The broker may have accepted the order before transport failed.
             # NEVER retry automatically; quarantine pending manual reconciliation.
             try:
@@ -155,6 +206,8 @@ class LiveExecutionEngine:
             raise
         # If acknowledgement persistence fails, state remains 'submitting'.
         # Future claims are blocked pending broker reconciliation.
+        store.append(cmd["id"], client_id, "broker_order_snapshot",
+                     {"broker_order_id": str(accepted.id), "status": "accepted_unverified"})
         bridge.transition_claimed(cmd, "submitting", "acknowledged",
                                   message="Broker accepted, fill not verified",
                                   broker_id=str(accepted.id))
@@ -273,6 +326,8 @@ class LiveExecutionEngine:
                 if not DASHBOARD_SYNC or dash is None or not dash.bridge.client:
                     raise RuntimeError("Dashboard bridge required; fail closed")
                 bridge = dash.bridge
+                # Mandatory disk verification, including every unresolved command.
+                self.validate_restart_audit(bridge)
                 if bridge.unresolved_trade_commands():
                     # Reconciliation is independently opt-in; even a successful
                     # lookup NEVER allows this loop to submit another order.
