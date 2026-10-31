@@ -131,16 +131,18 @@ def test_zero_and_invalid_stop_loss(risk_engine):
 
 
 def test_cache_filename_generation_cross_platform():
-    """Verify generated Parquet filenames contain no asterisks, spaces, or illegal characters."""
+    """Master cache names are deterministic, sanitized and independent of lookback days."""
     from alpaca.data.timeframe import TimeFrame
 
-    filename = DataLayer.build_cache_filename(symbol="SPY", timeframe=TimeFrame.Day, days=180)
-    assert filename == "SPY_1Day_180d.parquet"
+    filename = DataLayer.build_cache_filename(symbol="SPY", timeframe=TimeFrame.Day)
+    assert filename == "SPY_1Day_master.parquet"
 
-    # Verify sanitization if dirty input with asterisks/spaces is passed
-    dirty_filename = DataLayer.build_cache_filename(symbol=" spy* ", timeframe=" *1Day* ", days=365)
-    assert dirty_filename == "SPY_1Day_365d.parquet"
+    # Different requested history horizons must share the same incremental cache.
+    assert DataLayer.get_cache_path("SPY", TimeFrame.Day).name == filename
 
-    forbidden_chars = set('<>:"/\\|?* ')
+    dirty_filename = DataLayer.build_cache_filename(symbol=" spy* ", timeframe=" *1Day* ")
+    assert dirty_filename == filename
+
+    forbidden_chars = set('<>:"/\\\\|?* ')
     assert not (forbidden_chars & set(filename))
     assert not (forbidden_chars & set(dirty_filename))
