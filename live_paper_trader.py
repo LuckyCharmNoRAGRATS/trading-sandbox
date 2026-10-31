@@ -162,6 +162,62 @@ class LiveExecutionEngine:
                                   broker_id=str(accepted.id))
         return accepted
 
+    def reconcile_unresolved_commands(self, bridge):
+        """Read-only broker lookup; persist identity only, NEVER retry submission.
+
+        Matched orders remain 'acknowledged', which is a blocking state until
+        independent order and portfolio reconciliation is implemented.
+        """
+        commands = bridge.list_unresolved_trade_commands()
+        outcomes = []
+        for cmd in commands:
+            if cmd.get("cmd") != "submit_order":
+                raise RuntimeError("Unexpected reconciliation command")
+            status = cmd.get("status")
+            if status == "claimed":
+                # No durable pre-submit transition exists. Human review required.
+                outcomes.append((cmd["id"], "claimed_requires_review"))
+                continue
+            if status not in ("submitting", "uncertain", "acknowledged"):
+                raise RuntimeError("Unexpected reconciliation state")
+            client_id = cmd.get("client_order_id")
+            if (
+                not isinstance(cmd.get("id"), int)
+                or isinstance(cmd["id"], bool)
+                or not cmd.get("claim_token")
+                or client_id != f'e1-{cmd["id"]}'
+            ):
+                raise RuntimeError("Invalid unresolved command identity")
+            try:
+                order = self.trading_client.get_order_by_client_id(client_id)
+            except Exception:
+                # Includes not-found, timeout and network failures: no submission.
+                logging.exception("Broker lookup unresolved for command %s", cmd["id"])
+                outcomes.append((cmd["id"], "lookup_unresolved"))
+                continue
+            if order is None:
+                outcomes.append((cmd["id"], "lookup_unresolved"))
+                continue
+            broker_client_id = getattr(order, "client_order_id", None)
+            broker_id = getattr(order, "id", None)
+            raw_status = getattr(order, "status", None)
+            order_status = getattr(raw_status, "value", raw_status)
+            if (broker_client_id != client_id or broker_id is None
+                    or not isinstance(order_status, str) or not order_status):
+                raise RuntimeError("Ambiguous or mismatched broker response")
+            if cmd.get("broker_order_id") not in (None, "", str(broker_id)):
+                raise RuntimeError("Stored broker order ID conflicts with broker")
+            # Broker lookup proves an identity, not an order fill or safe exposure.
+            # Even terminal broker states do not release the command here.
+            if status != "acknowledged":
+                bridge.transition_claimed(
+                    cmd, status, "acknowledged",
+                    message=f"Broker identity verified; state={order_status}; portfolio review pending",
+                    broker_id=str(broker_id),
+                )
+            outcomes.append((cmd["id"], "matched_still_blocked"))
+        return outcomes
+
     def execute_loop(self):
         logging.info("E1.3 execution worker started (automated entries disabled)")
         while True:
@@ -174,6 +230,10 @@ class LiveExecutionEngine:
                     raise RuntimeError("Dashboard bridge required; fail closed")
                 bridge = dash.bridge
                 if bridge.unresolved_trade_commands():
+                    # Reconciliation is independently opt-in; even a successful
+                    # lookup NEVER allows this loop to submit another order.
+                    if os.getenv("E1_RECONCILIATION_ENABLED") == "true":
+                        self.reconcile_unresolved_commands(bridge)
                     logging.critical("Unresolved trade commands: submissions halted")
                     time.sleep(60)
                     continue
