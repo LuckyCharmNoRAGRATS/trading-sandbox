@@ -68,9 +68,9 @@ def test_nan_or_non_json_rejected(tmp_path):
 def test_duplicate_baselines_fail_closed(tmp_path):
     item = store(tmp_path)
     item.append(101, "e1-101", "pre_submit_baseline", {"qty": "0"})
-    item.append(101, "e1-101", "pre_submit_baseline", {"qty": "1"})
-    with pytest.raises(AuditIntegrityError, match="Exactly one"):
-        item.baseline(101)
+    with pytest.raises(AuditIntegrityError, match="Duplicate"):
+        item.append(101, "e1-101", "pre_submit_baseline", {"qty": "1"})
+    assert item.baseline(101)["qty"] == "0"
 
 
 def test_missing_baseline_rejected(tmp_path):
