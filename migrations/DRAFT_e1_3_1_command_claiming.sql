@@ -22,6 +22,8 @@ LANGUAGE plpgsql SECURITY INVOKER SET search_path = ''
 AS $$
 BEGIN
  IF p_claim_token IS NULL THEN RAISE EXCEPTION 'claim token required'; END IF;
+ -- Serialize competing claims, including the unresolved-state check.
+ IF NOT pg_catalog.pg_try_advisory_xact_lock(31031, 1) THEN RETURN; END IF;
  -- Fail closed on ANY unresolved prior submission. No lease-based automatic retries.
  IF EXISTS (SELECT 1 FROM public.commands
    WHERE cmd = 'submit_order'
