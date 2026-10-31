@@ -170,3 +170,21 @@ def test_restart_with_unresolved_order_blocks_claim_and_broker(monkeypatch):
     bridge.claim_next_trade_command.assert_not_called()
     broker.submit_order.assert_not_called()
     worker.sync_portfolio_state.assert_not_called()
+
+
+def test_mismatched_broker_id_is_rejected_before_submission():
+    worker, bridge, broker, state, risk = fake_context()
+    command = sample_command()
+    command["client_order_id"] = "e1-999"
+    with pytest.raises(ValueError, match="stable broker"):
+        worker.process_claimed_order(command, bridge, state, risk)
+    broker.submit_order.assert_not_called()
+
+
+def test_claim_without_owner_token_is_rejected_before_submission():
+    worker, bridge, broker, state, risk = fake_context()
+    command = sample_command()
+    command["claim_token"] = None
+    with pytest.raises(ValueError, match="stable broker"):
+        worker.process_claimed_order(command, bridge, state, risk)
+    broker.submit_order.assert_not_called()
