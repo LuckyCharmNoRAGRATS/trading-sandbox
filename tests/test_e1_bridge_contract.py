@@ -80,3 +80,12 @@ def test_transition_requires_single_matching_row():
     cmd = {"id": 5, "claim_token": "fake-token"}
     with pytest.raises(RuntimeError, match="not confirmed"):
         bridge.transition_claimed(cmd, "claimed", "submitting")
+
+
+def test_unresolved_lookup_includes_acknowledged_orders():
+    bridge = bridge_with_fake_client()
+    bridge.client.table.return_value.select.return_value.eq.return_value.in_.return_value.limit.return_value.execute.return_value.data = []
+    bridge.unresolved_trade_commands()
+    statuses = bridge.client.table.return_value.select.return_value.eq.return_value.in_.call_args.args[1]
+    assert "acknowledged" in statuses
+    assert "uncertain" in statuses
