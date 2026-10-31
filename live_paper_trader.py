@@ -16,9 +16,10 @@ from discord_notifier import notify_system_status, notify_error
 from portfolio_reconciliation import validate_broker_snapshot, assert_can_claim_new_trade
 from reconciliation_audit import audit_order_position
 from execution_audit import ExecutionAuditStore, AuditIntegrityError
+from release_gate import validate_execution_release
 
 # 1. Environment & Logging Setup
-load_dotenv(override=True)
+load_dotenv(override=False)
 logging.basicConfig(
     filename="logs/trading_bot.log",
     level=logging.INFO,
@@ -36,6 +37,8 @@ except (ImportError, ModuleNotFoundError, KeyError) as e:
 
 class LiveExecutionEngine:
     def __init__(self):
+        # Verify release configuration before constructing any broker clients.
+        validate_execution_release()
         self.config = QuantConfig()
         self.trading_client = TradingClient(self.config.api_key, self.config.secret_key, paper=True)
         self.data_layer = DataLayer(self.config)
@@ -320,7 +323,7 @@ class LiveExecutionEngine:
         while True:
             try:
                 # Disabled until migration, reconciliation tests, and release approval.
-                if os.getenv("E1_EXECUTION_ENABLED") != "true":
+                if not validate_execution_release()["execution_allowed"]:
                     time.sleep(60)
                     continue
                 if not DASHBOARD_SYNC or dash is None or not dash.bridge.client:
