@@ -128,3 +128,45 @@ def test_client_order_id_stays_same_across_worker_recreation():
     # Replay identity is stable, but must NOT be re-submitted after recovery.
     assert sample_command()["client_order_id"] == first_broker.submit_order.call_args.args[0].client_order_id
     second_broker.submit_order.assert_not_called()
+
+
+class StopWorkerLoop(BaseException):
+    """Escape the intentionally broad worker error handler during tests."""
+
+
+def test_worker_disabled_by_default_does_not_contact_any_service(monkeypatch):
+    monkeypatch.delenv("E1_EXECUTION_ENABLED", raising=False)
+    monkeypatch.setattr(
+        live_paper_trader.time, "sleep",
+        lambda _: (_ for _ in ()).throw(StopWorkerLoop()),
+    )
+    worker, bridge, broker, state, risk = fake_context()
+    worker.sync_portfolio_state = MagicMock()
+    with pytest.raises(StopWorkerLoop):
+        worker.execute_loop()
+    worker.sync_portfolio_state.assert_not_called()
+    broker.submit_order.assert_not_called()
+
+
+def test_restart_with_unresolved_order_blocks_claim_and_broker(monkeypatch):
+    monkeypatch.setenv("E1_EXECUTION_ENABLED", "true")
+    monkeypatch.setattr(live_paper_trader, "DASHBOARD_SYNC", True)
+    bridge = MagicMock()
+    bridge.client = object()
+    bridge.unresolved_trade_commands.return_value = [
+        {"id": 101, "status": "submitting", "client_order_id": "e1-101"}
+    ]
+    monkeypatch.setattr(
+        live_paper_trader, "dash", SimpleNamespace(bridge=bridge)
+    )
+    monkeypatch.setattr(
+        live_paper_trader.time, "sleep",
+        lambda _: (_ for _ in ()).throw(StopWorkerLoop()),
+    )
+    worker, _, broker, state, risk = fake_context()
+    worker.sync_portfolio_state = MagicMock()
+    with pytest.raises(StopWorkerLoop):
+        worker.execute_loop()
+    bridge.claim_next_trade_command.assert_not_called()
+    broker.submit_order.assert_not_called()
+    worker.sync_portfolio_state.assert_not_called()
