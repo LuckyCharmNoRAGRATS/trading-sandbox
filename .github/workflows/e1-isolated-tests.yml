@@ -61,6 +61,7 @@ jobs:
             tests/test_e16_order_lifecycle.py \
             tests/test_e17_reconciliation_audit.py \
             tests/test_e18_execution_audit.py \
+            tests/test_e19_execution_recovery.py \
             tests/test_risk_manager.py
       - name: Run offline regression suite
         if: success()
@@ -75,6 +76,7 @@ jobs:
             tests/test_e16_order_lifecycle.py \
             tests/test_e17_reconciliation_audit.py \
             tests/test_e18_execution_audit.py \
+            tests/test_e19_execution_recovery.py \
             tests/test_risk_manager.py
       - name: Summarize Python test results
         if: always()
