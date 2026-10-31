@@ -26,6 +26,7 @@ def fake_context():
     )
     worker.trading_client = broker
     worker.audit_store = MagicMock()
+    worker.audit_store.history.return_value = []
     state = dict(
         equity=100000.0, start_of_day_equity=100000.0,
         open_symbols=[], pending_symbols=[], portfolio_exposure=0.0,
