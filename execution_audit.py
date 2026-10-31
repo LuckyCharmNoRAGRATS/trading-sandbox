@@ -20,7 +20,7 @@ class AuditIntegrityError(RuntimeError):
 
 GENESIS = "0" * 64
 ALLOWED_KINDS = frozenset({
-    "command_claimed", "pre_submit_baseline", "submission_uncertain",
+    "command_claimed", "pre_submit_baseline", "submission_intent", "submission_uncertain",
     "broker_order_snapshot", "portfolio_snapshot", "reconciliation_report",
     "manual_review",
 })
@@ -160,6 +160,26 @@ class ExecutionAuditStore:
                 {"sequence": seq, "kind": kind, "payload": json.loads(payload), "event_hash": digest}
                 for seq, kind, payload, digest in rows
             ]
+
+    def recover_command(self, command_id, client_order_id):
+        """Require evidence identity and safe, ordered pre-submit record.
+
+        This is a conservative gate, not proof that a broker did not accept
+        an order. A lost local database requires manual reconciliation.
+        """
+        history = self.history(command_id)
+        if not history:
+            raise AuditIntegrityError("Missing durable command history")
+        baseline_events = [e for e in history if e["kind"] == "pre_submit_baseline"]
+        if len(baseline_events) != 1:
+            raise AuditIntegrityError("Missing or duplicate pre-submit baseline")
+        baseline = baseline_events[0]
+        if history[0]["sequence"] != baseline["sequence"]:
+            raise AuditIntegrityError("Baseline must be first command event")
+        if self.baseline(command_id).get("client_order_id") != client_order_id:
+            raise AuditIntegrityError("Stored baseline command identity mismatch")
+        return {"command_id": command_id, "events": len(history),
+                "requires_manual_review": True, "clearance_authorized": False}
 
     def baseline(self, command_id):
         """A duplicated baseline or no baseline is never silently trusted."""
