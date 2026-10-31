@@ -47,6 +47,7 @@ def validate_broker_snapshot(account, positions, orders, max_exposure_pct=0.5):
         raise PortfolioStateError("Exposure limit exceeds 100%")
     seen = set()
     exposure = 0.0
+    position_quantities = {}
     for position in positions:
         symbol = _symbol(getattr(position, "symbol", None))
         if symbol in seen:
@@ -71,6 +72,7 @@ def validate_broker_snapshot(account, positions, orders, max_exposure_pct=0.5):
         if not math.isfinite(market_value) or market_value == 0:
             raise PortfolioStateError("Invalid position market value")
         exposure += abs(market_value)
+        position_quantities[symbol] = str(qty)
     pending = []
     for order in orders:
         pending.append(_symbol(getattr(order, "symbol", None)))
@@ -83,6 +85,8 @@ def validate_broker_snapshot(account, positions, orders, max_exposure_pct=0.5):
         "start_of_day_equity": previous_equity,
         "buying_power": buying_power,
         "open_symbols": sorted(seen),
+        "position_quantities": position_quantities,
+        "snapshot_verified": True,
         "pending_symbols": pending,
         "portfolio_exposure": exposure,
         "open_order_count": len(pending),
