@@ -8,10 +8,39 @@ ALTER TABLE public.commands
 ALTER TABLE public.commands
   ADD CONSTRAINT e114_fence_nonnegative CHECK (fence_epoch >= 0);
 
--- Existing E1 claim RPC does not increment fence_epoch. This function is
--- therefore a *transition contract prototype*, NOT a deployed fencing system.
--- A future migration must atomically assign a monotonically increasing epoch
--- in the claim RPC and propagate it to every worker command.
+-- Prototype claim path: global transaction advisory lock serializes the
+-- unresolved check and assignment. Epoch increments on first claim; no
+-- automatic reclaim or reset is allowed. This is NOT wired to Python worker.
+CREATE OR REPLACE FUNCTION public.e114_claim_next_trade_command(p_claim_token uuid)
+RETURNS SETOF public.commands
+LANGUAGE plpgsql SECURITY INVOKER SET search_path = ''
+AS $
+BEGIN
+ IF p_claim_token IS NULL THEN RAISE EXCEPTION 'Claim token required'; END IF;
+ IF NOT pg_catalog.pg_try_advisory_xact_lock(31031, 1) THEN RETURN; END IF;
+ IF EXISTS (SELECT 1 FROM public.commands
+   WHERE cmd='submit_order'
+     AND status IN ('claimed','submitting','uncertain','acknowledged'))
+ THEN RETURN; END IF;
+ RETURN QUERY
+ WITH next_command AS (
+   SELECT c.id FROM public.commands c
+   WHERE c.status='pending' AND c.cmd='submit_order'
+   ORDER BY c.created_at,c.id FOR UPDATE SKIP LOCKED LIMIT 1
+ )
+ UPDATE public.commands c
+ SET status='claimed', claim_token=p_claim_token,
+     claimed_at=clock_timestamp(),
+     fence_epoch=c.fence_epoch+1,
+     client_order_id=COALESCE(c.client_order_id,'e1-'||c.id::text)
+ FROM next_command WHERE c.id=next_command.id RETURNING c.*;
+END;
+$;
+REVOKE ALL ON FUNCTION public.e114_claim_next_trade_command(uuid)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.e114_claim_next_trade_command(uuid)
+  TO service_role;
+
 CREATE OR REPLACE FUNCTION public.e114_fenced_transition(
   p_id bigint,
   p_claim_token uuid,
