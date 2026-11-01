@@ -24,6 +24,8 @@ def _state():
         "equity": 100000.0, "start_of_day_equity": 100000.0,
         "open_symbols": [], "pending_symbols": [],
         "portfolio_exposure": 0.0, "snapshot_verified": True,
+        "order_coverage_checked": True,
+        "observationally_stable": True,
         "position_quantities": {},
     }
 
