@@ -44,6 +44,8 @@ def fixture(tmp_path):
         equity=100000, start_of_day_equity=100000,
         portfolio_exposure=0, open_symbols=[], pending_symbols=[],
         snapshot_verified=True, position_quantities={},
+        order_coverage_checked=True, observationally_stable=True,
+        order_coverage_checked=True, observationally_stable=True,
     )
     risk = RiskEngine(account_equity=100000, config=QuantConfig())
     return worker, broker, bridge, state, risk
