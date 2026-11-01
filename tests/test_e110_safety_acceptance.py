@@ -52,6 +52,8 @@ def setup(tmp_path, audit_path=None):
         "open_symbols": [], "pending_symbols": [],
         "portfolio_exposure": 0.,
         "snapshot_verified": True,
+        "order_coverage_checked": True,
+        "observationally_stable": True,
         "position_quantities": {},
     }
     risk = RiskEngine(account_equity=100000, config=QuantConfig())
