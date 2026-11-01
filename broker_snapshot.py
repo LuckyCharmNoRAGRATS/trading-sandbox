@@ -89,8 +89,11 @@ def collect_stable_portfolio_snapshot(client, *, max_exposure_pct=0.5):
     No new risk-increasing order should be enabled based on this check alone.
     """
     first = _read_once(client)
+    # Freeze the first observation before the second API read: SDK clients
+    # may return and mutate references to the same objects between calls.
+    first_signature = _snapshot_signature(*first)
     second = _read_once(client)
-    if _snapshot_signature(*first) != _snapshot_signature(*second):
+    if first_signature != _snapshot_signature(*second):
         raise BrokerSnapshotError("Broker account, positions or orders changed between reads")
     state = validate_broker_snapshot(*second, max_exposure_pct=max_exposure_pct)
     state["order_coverage_checked"] = True
