@@ -65,3 +65,26 @@ BEGIN
   IF SQLERRM = 'Unsafe transition unexpectedly accepted' THEN RAISE; END IF;
  END;
 END $$;
+
+-- Prototype claim must atomically set token, stable broker ID and epoch.
+-- Reset only the disposable fixture; this is NOT recovery policy.
+UPDATE public.commands SET status='failed' WHERE cmd='submit_order';
+INSERT INTO public.commands(cmd,status,args)
+VALUES ('submit_order','pending','{}'::jsonb);
+SET ROLE service_role;
+DO $$
+DECLARE rec record; duplicate_count bigint;
+BEGIN
+ SELECT * INTO rec FROM public.e114_claim_next_trade_command(
+  '00000000-0000-4000-8000-000000000143'::uuid);
+ IF rec.id IS NULL OR rec.status <> 'claimed' OR rec.fence_epoch <> 1
+    OR rec.client_order_id <> 'e1-'||rec.id::text
+    OR rec.claim_token <> '00000000-0000-4000-8000-000000000143'::uuid
+ THEN RAISE EXCEPTION 'Prototype claim did not establish fencing identity'; END IF;
+ SELECT count(*) INTO duplicate_count FROM public.e114_claim_next_trade_command(
+  '00000000-0000-4000-8000-000000000144'::uuid);
+ IF duplicate_count <> 0 THEN
+   RAISE EXCEPTION 'Second worker claimed during unresolved command';
+ END IF;
+END $$;
+RESET ROLE;
