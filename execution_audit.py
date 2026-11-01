@@ -45,7 +45,7 @@ def _digest(sequence, timestamp, command_id, client_order_id, kind, payload, pre
 class ExecutionAuditStore:
     """Explicit opt-in local storage; caller must supply persistent disk path."""
 
-    def __init__(self, path):
+    def __init__(self, path, *, require_existing=False):
         self.path = Path(path)
         if self.path == Path(":memory:") or not self.path.is_absolute():
             raise AuditIntegrityError("Audit database requires an absolute persistent path")
@@ -53,16 +53,24 @@ class ExecutionAuditStore:
             raise AuditIntegrityError("Missing or unsafe audit database directory")
         if self.path.exists() and not self.path.is_file():
             raise AuditIntegrityError("Audit database is not a regular file")
+        if require_existing and not self.path.is_file():
+            raise AuditIntegrityError("Existing execution audit database required for recovery")
         self._initialize()
 
-    def _connect(self):
+    def _connect(self, *, allow_create=False):
+        # sqlite3.connect() silently creates a missing file. That would erase
+        # the evidence of an audit-disk loss after this store was initialized.
+        if self.path.is_symlink() or not self.path.parent.is_dir():
+            raise AuditIntegrityError("Unsafe audit database path")
+        if not self.path.is_file() and not allow_create:
+            raise AuditIntegrityError("Execution audit database disappeared")
         conn = sqlite3.connect(str(self.path), timeout=10, isolation_level=None)
         conn.execute("PRAGMA synchronous=FULL")
         conn.execute("PRAGMA busy_timeout=10000")
         return conn
 
     def _initialize(self):
-        with self._connect() as conn:
+        with self._connect(allow_create=not self.path.exists()) as conn:
             conn.execute("""CREATE TABLE IF NOT EXISTS events (
                 seq INTEGER PRIMARY KEY,
                 timestamp TEXT NOT NULL,
