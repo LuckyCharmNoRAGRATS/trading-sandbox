@@ -112,6 +112,23 @@ def test_account_changes_between_reads_blocks():
         collect_stable_portfolio_snapshot(broker)
 
 
+def test_reused_mutable_account_object_cannot_hide_snapshot_drift():
+    broker = client_for()
+    shared = account()
+    calls = 0
+
+    def same_object_with_mutation():
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            shared.equity = "99999"
+        return shared
+
+    broker.get_account.side_effect = same_object_with_mutation
+    with pytest.raises(BrokerSnapshotError, match="changed between"):
+        collect_stable_portfolio_snapshot(broker)
+
+
 def test_position_changes_between_reads_blocks():
     broker = client_for(positions=[position()])
     broker.get_all_positions.side_effect = [
