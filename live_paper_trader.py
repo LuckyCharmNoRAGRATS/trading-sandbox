@@ -17,6 +17,7 @@ from portfolio_reconciliation import validate_broker_snapshot, assert_can_claim_
 from reconciliation_audit import audit_order_position
 from execution_audit import ExecutionAuditStore, AuditIntegrityError
 from release_gate import validate_execution_release
+from broker_snapshot import collect_stable_portfolio_snapshot
 
 # 1. Environment & Logging Setup
 load_dotenv(override=False)
@@ -58,16 +59,15 @@ class LiveExecutionEngine:
         
     def sync_portfolio_state(self) -> dict:
         """Pulls live Alpaca state to feed the RiskEngine and Dashboard."""
-        account = self.trading_client.get_account()
-        positions = self.trading_client.get_all_positions()
-        orders = self.trading_client.get_orders()
-        
-        # E1.5: never substitute partial/invalid broker state with zero exposure.
-        state = validate_broker_snapshot(
-            account, positions, orders,
+        # E1.13: fail closed if the open-order page can be truncated or if
+        # independent reads disagree. This is not a transactional broker view.
+        state = collect_stable_portfolio_snapshot(
+            self.trading_client,
             max_exposure_pct=self.config.max_portfolio_exposure_pct,
         )
-        self.active_positions = {p.symbol: float(p.qty) for p in positions}
+        self.active_positions = {
+            symbol: float(qty) for symbol, qty in state["position_quantities"].items()
+        }
 
         if DASHBOARD_SYNC and dash is not None:
             dash.set_kv("portfolio_state", state)
@@ -108,7 +108,7 @@ class LiveExecutionEngine:
         path = os.getenv("E1_AUDIT_DB_PATH")
         if not path:
             raise AuditIntegrityError("E1_AUDIT_DB_PATH required; execution fail closed")
-        store = ExecutionAuditStore(path)
+        store = ExecutionAuditStore(path, require_existing=True)
         store.verify()
         self.audit_store = store
         return store
@@ -176,6 +176,9 @@ class LiveExecutionEngine:
         # the pre-order baseline. Never infer a missing position from partial data.
         if state.get("snapshot_verified") is not True:
             raise AuditIntegrityError("Unverified portfolio snapshot")
+        if (state.get("order_coverage_checked") is not True
+                or state.get("observationally_stable") is not True):
+            raise AuditIntegrityError("Open-order coverage or snapshot stability unverified")
         quantities = state.get("position_quantities")
         if not isinstance(quantities, dict):
             raise AuditIntegrityError("Position quantities missing")
