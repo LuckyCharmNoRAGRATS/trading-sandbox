@@ -19,8 +19,10 @@ on:
       - "docs/E1_11_RELEASE_READINESS.md"
       - "docs/E1_12_INDEPENDENT_SAFETY_ASSESSMENT.md"
       - "docs/E1_13_CI_EVIDENCE_AND_READINESS.md"
+      - "docs/E1_14_READINESS.md"
       - ".github/workflows/e1-isolated-tests.yml"
       - "migrations/DRAFT_e1_3_1_command_claiming.sql"
+      - "migrations/DRAFT_e1_14_fencing.sql"
 
 permissions:
   contents: read
@@ -165,6 +167,10 @@ jobs:
       - name: Test duplicate and competing claims
         run: |
           bash tests/sql/e1_concurrency.sh 2>&1 | tee test-reports/postgres-claims.log
+          test "${PIPESTATUS[0]}" -eq 0
+      - name: Verify draft fencing in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f tests/sql/e114_fencing_contract.sql 2>&1 | tee test-reports/postgres-fencing.log
           test "${PIPESTATUS[0]}" -eq 0
       - name: Summarize disposable PostgreSQL job
         if: always()
