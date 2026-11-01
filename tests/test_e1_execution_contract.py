@@ -45,7 +45,6 @@ def fake_context():
         equity=100000.0, start_of_day_equity=100000.0,
         open_symbols=[], pending_symbols=[], portfolio_exposure=0.0,
         snapshot_verified=True, position_quantities={},
-        order_coverage_checked=True, observationally_stable=True,
         order_coverage_checked=True, observationally_stable=True
     )
     return worker, bridge, broker, state, risk
