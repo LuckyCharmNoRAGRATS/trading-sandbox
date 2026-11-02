@@ -35,4 +35,4 @@ jobs:
           test -n "$SUPABASE_URL" || { echo 'SUPABASE_URL secret missing'; exit 1; }
           test -n "$SUPABASE_SERVICE_KEY" || { echo 'SUPABASE_SERVICE_KEY secret missing'; exit 1; }
       - name: Ingest new disclosures, no trade execution
-        run: python congress_ingest.py --days 90 --limit 500
+        run: python congress_ingest.py --provider tracefour --member 'Nancy Pelosi'
