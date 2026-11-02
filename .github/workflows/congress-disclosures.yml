@@ -30,6 +30,8 @@ on:
       - "docs/E1_23_READ_ONLY_RESEARCH_PIPELINE.md"
       - "docs/E1_24_RELEASE_READINESS_GATE.md"
       - "docs/E1_25_REVIEW_HANDOFF_READINESS.md"
+      - "docs/E1_26_PREVIEW_BRANCH_GUARD.md"
+      - "vercel.json"
       - ".github/workflows/congress-disclosures.yml"
 
 permissions:
@@ -42,7 +44,7 @@ concurrency:
 jobs:
   offline-tests:
     if: github.ref == 'refs/heads/feature/e116-congress-readiness'
-    name: E1.25 no-network review-handoff validation
+    name: E1.26 no-network review-handoff validation
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
@@ -85,12 +87,13 @@ jobs:
             tests/test_e123_manifest_bridge.py \
             tests/test_e123_research_pipeline.py \
             tests/test_e124_release_gate.py \
-            tests/test_e125_review_handoff.py
+            tests/test_e125_review_handoff.py \
+            tests/test_e126_vercel_branch_guard.py
       - name: Run no-network regression suite
         run: |
           mkdir -p test-reports
           PYTHONPATH=tests:. python -m pytest -p e116_network_guard -q --tb=short \
-            --junitxml=test-reports/congress-e125-junit.xml \
+            --junitxml=test-reports/congress-e126-junit.xml \
             tests/test_congress_ingest.py \
             tests/test_congress_data_layer.py \
             tests/test_tracefour_ingest.py \
@@ -106,11 +109,12 @@ jobs:
             tests/test_e123_manifest_bridge.py \
             tests/test_e123_research_pipeline.py \
             tests/test_e124_release_gate.py \
-            tests/test_e125_review_handoff.py
+            tests/test_e125_review_handoff.py \
+            tests/test_e126_vercel_branch_guard.py
       - name: Retain offline pytest JUnit evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: congress-e125-offline-junit
-          path: test-reports/congress-e125-junit.xml
+          name: congress-e126-offline-junit
+          path: test-reports/congress-e126-junit.xml
           if-no-files-found: warn
