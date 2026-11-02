@@ -14,6 +14,7 @@ on:
       - "congress_evidence_intake.py"
       - "congress_connection_diagnostic.py"
       - "congress_manual_probe.py"
+      - "congress_research_pipeline.py"
       - "congress_data_layer.py"
       - "congress_research_guard.py"
       - "tests/**"
@@ -24,6 +25,7 @@ on:
       - "docs/E1_20_HOUSE_PDF_REQUEST_READINESS.md"
       - "docs/E1_21_TRACEFOUR_CONNECTION_DIAGNOSTICS.md"
       - "docs/E1_22_MANUAL_SINGLE_GET_READINESS.md"
+      - "docs/E1_23_READ_ONLY_RESEARCH_PIPELINE.md"
       - ".github/workflows/congress-disclosures.yml"
 
 permissions:
@@ -36,7 +38,7 @@ concurrency:
 jobs:
   offline-tests:
     if: github.ref == 'refs/heads/feature/e116-congress-readiness'
-    name: E1.22 no-network contract validation
+    name: E1.23 no-network research and integration validation
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
@@ -75,12 +77,14 @@ jobs:
             tests/test_e119_adjudication.py \
             tests/test_e120_evidence_intake.py \
             tests/test_e121_connection_diagnostic.py \
-            tests/test_e122_manual_probe.py
+            tests/test_e122_manual_probe.py \
+            tests/test_e123_manifest_bridge.py \
+            tests/test_e123_research_pipeline.py
       - name: Run no-network regression suite
         run: |
           mkdir -p test-reports
           PYTHONPATH=tests:. python -m pytest -p e116_network_guard -q --tb=short \
-            --junitxml=test-reports/congress-e122-junit.xml \
+            --junitxml=test-reports/congress-e123-junit.xml \
             tests/test_congress_ingest.py \
             tests/test_congress_data_layer.py \
             tests/test_tracefour_ingest.py \
@@ -92,11 +96,13 @@ jobs:
             tests/test_e119_adjudication.py \
             tests/test_e120_evidence_intake.py \
             tests/test_e121_connection_diagnostic.py \
-            tests/test_e122_manual_probe.py
+            tests/test_e122_manual_probe.py \
+            tests/test_e123_manifest_bridge.py \
+            tests/test_e123_research_pipeline.py
       - name: Retain offline pytest JUnit evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: congress-e122-offline-junit
-          path: test-reports/congress-e122-junit.xml
+          name: congress-e123-offline-junit
+          path: test-reports/congress-e123-junit.xml
           if-no-files-found: warn
