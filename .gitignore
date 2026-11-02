@@ -29,3 +29,7 @@ pelosi_e123_*
 pelosi_e124_*
 e123_outputs/
 e124_outputs/
+
+# E1.25 private reviewer handoff, source-derived candidate URLs and blank reviewer files
+pelosi_e125_*
+e125_outputs/
