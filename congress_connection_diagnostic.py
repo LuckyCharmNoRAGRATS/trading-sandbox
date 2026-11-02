@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import re
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -21,6 +22,7 @@ TRACEFOUR_URL = "https://tracefour.com/v1/congress/nancy-pelosi"
 MAX_JSON_BYTES = 2_000_000
 READ_CHUNK_SIZE = 65_536
 REQUEST_TIMEOUT = (10, 20)
+HOUSE_PDF_PATH = re.compile(r"/public_disc/ptr-pdfs/[0-9]{4}/[0-9]+\.pdf\Z")
 
 
 class DiagnosticError(ValueError):
@@ -40,6 +42,22 @@ def _base() -> dict[str, Any]:
         "orders_submitted": 0,
         "scheduled_sync_enabled": False,
     }
+
+
+def _is_official_filing_url(value: str) -> bool:
+    """Parse untrusted input without throwing on malformed IPv6 or bad ports.
+
+    Seeing the expected hostname in a string is NOT proof that the original
+    government filing has been downloaded or independently authenticated.
+    """
+    try:
+        uri = urlsplit(value)
+        return (uri.scheme == "https" and uri.hostname == "disclosures-clerk.house.gov"
+                and uri.port in (None, 443) and uri.username is None
+                and uri.password is None and not uri.query and not uri.fragment
+                and bool(HOUSE_PDF_PATH.fullmatch(uri.path)))
+    except ValueError:
+        return False
 
 
 def assess_body(body: Any, *, now: datetime | None = None) -> dict[str, Any]:
@@ -67,7 +85,7 @@ def assess_body(body: Any, *, now: datetime | None = None) -> dict[str, Any]:
     result["untrusted_link_hosts"] = sum(
         isinstance(row, dict) and isinstance(row.get("sourceLink"), str)
         and row["sourceLink"].startswith("https://")
-        and urlsplit(row["sourceLink"]).hostname != "disclosures-clerk.house.gov"
+        and not _is_official_filing_url(row["sourceLink"])
         for row in rows
     )
     result["unverified_historical_completeness"] = True
