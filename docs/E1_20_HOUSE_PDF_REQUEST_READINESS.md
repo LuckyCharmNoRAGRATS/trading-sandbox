@@ -75,14 +75,14 @@ The source URLs are **never fetched**. The module accepts only the exact officia
 cd /mnt/data/e120_work
 PYTHONPATH=tests:. E120_E118_DIR=/mnt/data E119_E118_DIR=/mnt/data \
   PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
-  python -m pytest -q -p no:cacheprovider \
+  python -m pytest -p e116_network_guard -q -p no:cacheprovider \
   --junitxml=/mnt/data/e120_outputs/e120_local_junit.xml \
   tests/test_e119_adjudication.py tests/test_e120_evidence_intake.py
 
 python congress_evidence_intake.py /mnt/data --output-dir /mnt/data/e120_outputs/files
 ```
 
-**45 passed, 0 failed** (E1.19 + E1.20), including optional private-data tests on the exact uploaded E1.18 outputs. Synthetic PDF parser evidence is explicitly marked origin-unverified. The entire older E1.15–E1.18 suite was **not** re-run locally during this milestone. GitHub Actions Python CI status is still independently unverified; a Vercel `success` status is not proof of pytest completion.
+**45 passed, 0 failed** with the socket-blocking test guard (E1.19 + E1.20), including optional private-data tests on the exact uploaded E1.18 outputs. Synthetic PDF parser evidence is explicitly marked origin-unverified. The entire older E1.15–E1.18 suite was **not** re-run locally during this milestone. GitHub Actions Python CI status is still independently unverified; a Vercel `success` status is not proof of pytest completion.
 
 ## Human next action and approval boundary
 
