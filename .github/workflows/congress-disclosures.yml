@@ -1,4 +1,4 @@
-name: Congressional disclosures E1.19 offline adjudication (no sync)
+name: Congressional disclosures E1.20 offline evidence intake (no sync)
 
 on:
   push:
@@ -11,6 +11,7 @@ on:
       - "congress_remediation.py"
       - "congress_reconciliation.py"
       - "congress_adjudication.py"
+      - "congress_evidence_intake.py"
       - "congress_data_layer.py"
       - "congress_research_guard.py"
       - "tests/**"
@@ -18,6 +19,7 @@ on:
       - "docs/E1_17_CONGRESS_DISCLOSURE_REMEDIATION.md"
       - "docs/E1_18_CONGRESS_RECONCILIATION.md"
       - "docs/E1_19_ADJUDICATION_READINESS.md"
+      - "docs/E1_20_HOUSE_PDF_REQUEST_READINESS.md"
       - ".github/workflows/congress-disclosures.yml"
 
 permissions:
@@ -30,7 +32,7 @@ concurrency:
 jobs:
   offline-tests:
     if: github.ref == 'refs/heads/feature/e116-congress-readiness'
-    name: E1.19 no-network contract validation
+    name: E1.20 no-network contract validation
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
@@ -66,12 +68,13 @@ jobs:
             tests/test_e116_offline_preview.py \
             tests/test_e117_remediation.py \
             tests/test_e118_reconciliation.py \
-            tests/test_e119_adjudication.py
+            tests/test_e119_adjudication.py \
+            tests/test_e120_evidence_intake.py
       - name: Run no-network regression suite
         run: |
           mkdir -p test-reports
           PYTHONPATH=tests:. python -m pytest -p e116_network_guard -q --tb=short \
-            --junitxml=test-reports/congress-e119-junit.xml \
+            --junitxml=test-reports/congress-e120-junit.xml \
             tests/test_congress_ingest.py \
             tests/test_congress_data_layer.py \
             tests/test_tracefour_ingest.py \
@@ -80,11 +83,12 @@ jobs:
             tests/test_e116_offline_preview.py \
             tests/test_e117_remediation.py \
             tests/test_e118_reconciliation.py \
-            tests/test_e119_adjudication.py
+            tests/test_e119_adjudication.py \
+            tests/test_e120_evidence_intake.py
       - name: Retain offline pytest JUnit evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: congress-e119-offline-junit
-          path: test-reports/congress-e119-junit.xml
+          name: congress-e120-offline-junit
+          path: test-reports/congress-e120-junit.xml
           if-no-files-found: warn
