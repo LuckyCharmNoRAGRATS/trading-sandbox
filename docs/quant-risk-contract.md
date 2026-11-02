@@ -17,7 +17,7 @@
 - `quant_risk.policy.assess_order(intent, snapshot, limits, now, *, reserved_notional=0, reserved_symbols=()) -> RiskDecision`: pure calculation; no I/O, no broker, no network, no ML, no strategy changes. **Not** an execution authority.
 - `quant_risk.gate.RiskGate(limits).preflight(intent, snapshot, now) -> RiskDecision`: thread-locked in-memory intent reservation, cumulative session-start-equity drawdown latch, operator kill, manual recovery. It **does not** submit/cancel orders or persist state.
 - `RiskGate.release_reservation(intent_id) -> bool`: release confirmed terminal reservation without allowing ID replay.
-- `RiskGate.trip_manual_kill(reason) -> bool`: block future preflights, clear local reservations (does not cancel broker orders).
+- `RiskGate.trip_manual_kill(reason) -> bool`: block future preflights and retain outstanding local reservations (does not cancel broker orders).
 - `RiskGate.clear_manual_kill(snapshot, now, operator_reason) -> bool`: explicit manual recovery with fresh reconciled state, **does not clear daily latch**.
 - `RiskGate.advance_session(snapshot, now, operator_reason) -> bool`: explicit new-session rollover, requires changed trusted session ID, fresh non-breached snapshot and no outstanding local reservation. Does not clear independent manual kill.
 
