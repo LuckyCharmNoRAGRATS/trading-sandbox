@@ -43,6 +43,13 @@ Sources:
 
 This helper **is not yet wired into** `feature/congress-disclosure-data`. Any future integration requires review and approval; the existing feature code may not enforce every guard above.
 
+## Executed local regression evidence
+
+- Offline run on 2026-11-02: `PYTHONPATH=. python -m pytest -q -p no:cacheprovider tests/test_e115_congress_research_guard.py` — **29 passed in 0.08s** in a temporary test directory.
+- Verified exact Git blob SHA of locally tested `congress_research_guard.py`: `620e2c22af00c07c3758ad4988521d29b8063f83`.
+- Verified exact Git blob SHA of locally tested `tests/test_e115_congress_research_guard.py`: `775dd9b654e1746648a6322dd405f34829a63dec`.
+- This is local evidence for the new isolated research guard **only**. The feature branch's existing ingestion tests, complete E1 execution tests, GitHub Actions, scheduled sync and database ingestion remain **unverified**.
+
 ## Remaining work / release gates
 
 1. Verify the exact feature branch's offline tests and schema against actual provider documentation, with no live ingestion until approved.
