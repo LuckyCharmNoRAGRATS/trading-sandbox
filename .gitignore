@@ -23,3 +23,9 @@ pelosi_e119_*
 pelosi_e120_*
 user_supplied_house_pdfs/
 e120_outputs/
+
+# E1.23-E1.24 derived local source snapshots, hold queues and audits
+pelosi_e123_*
+pelosi_e124_*
+e123_outputs/
+e124_outputs/
