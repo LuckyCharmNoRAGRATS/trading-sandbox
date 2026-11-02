@@ -50,11 +50,12 @@ def test_enforces_first_seen_filter():
 
 def test_candidates_exclude_non_equities_and_unrecognized_actions():
     db = DB([
-        {"ticker": "NVDA", "trade_type": "buy"},
-        {"ticker": None, "trade_type": "buy"},
-        {"ticker": "TSLA", "trade_type": "other"},
+        {"ticker": "NVDA", "trade_type": "buy", "asset_type": "Stock"},
+        {"ticker": "UBER", "trade_type": "buy", "asset_type": "Stock Option"},
+        {"ticker": None, "trade_type": "buy", "asset_type": "Stock"},
+        {"ticker": "TSLA", "trade_type": "other", "asset_type": "Stock"},
     ])
-    assert disclosure_candidates(db, asof=NOW) == [{"ticker": "NVDA", "trade_type": "buy"}]
+    assert disclosure_candidates(db, asof=NOW) == [{"ticker": "NVDA", "trade_type": "buy", "asset_type": "Stock"}]
 
 
 def test_bounded_read():
