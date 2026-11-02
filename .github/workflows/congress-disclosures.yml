@@ -1,38 +1,75 @@
-name: Congressional disclosures sync (data only)
+name: Congressional disclosures E1.16 offline readiness (no sync)
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '17 * * * *'
+  push:
+    branches:
+      - feature/e116-congress-readiness
+    paths:
+      - "congress_ingest.py"
+      - "congress_quality.py"
+      - "congress_data_layer.py"
+      - "congress_research_guard.py"
+      - "tests/**"
+      - "docs/E1_16_CONGRESS_SYNC_READINESS.md"
+      - ".github/workflows/congress-disclosures.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: congress-disclosure-sync
+  group: congress-e116-offline-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  ingest:
-    name: Fetch and store newly disclosed trades
+  offline-tests:
+    if: github.ref == 'refs/heads/feature/e116-congress-readiness'
+    name: E1.16 no-network contract validation
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-      POLITICIAN_MEMBER_FILTER: Nancy Pelosi
+      CI: "true"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      SUPABASE_URL: ""
+      SUPABASE_SERVICE_KEY: ""
+      CONGRESS_SYNC_APPROVED: ""
+      E1_EXECUTION_ENABLED: "false"
+      E1_RECONCILIATION_ENABLED: "false"
+      ALPACA_API_KEY: ""
+      ALPACA_SECRET_KEY: ""
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install pinned connector dependencies
-        run: python -m pip install requests==2.34.2 supabase==2.33.0 pytest==9.1.1
-      - name: Verify no-network ingestion tests
-        run: python -m pytest -q tests/test_congress_ingest.py tests/test_congress_data_layer.py tests/test_tracefour_ingest.py
-      - name: Validate database credentials are configured
+      - name: Install pinned minimal offline test dependencies
+        run: python -m pip install --disable-pip-version-check requests==2.34.2 pytest==9.1.1
+      - name: Collect no-network source and research tests
         run: |
-          test -n "$SUPABASE_URL" || { echo 'SUPABASE_URL secret missing'; exit 1; }
-          test -n "$SUPABASE_SERVICE_KEY" || { echo 'SUPABASE_SERVICE_KEY secret missing'; exit 1; }
-      - name: Ingest new disclosures, no trade execution
-        run: python congress_ingest.py --provider tracefour --member 'Nancy Pelosi'
+          PYTHONPATH=tests:. python -m pytest -p e116_network_guard --collect-only -q \
+            tests/test_congress_ingest.py \
+            tests/test_congress_data_layer.py \
+            tests/test_tracefour_ingest.py \
+            tests/test_e115_congress_research_guard.py \
+            tests/test_e116_quality.py
+      - name: Run no-network regression suite
+        run: |
+          mkdir -p test-reports
+          PYTHONPATH=tests:. python -m pytest -p e116_network_guard -q --tb=short \
+            --junitxml=test-reports/congress-e116-junit.xml \
+            tests/test_congress_ingest.py \
+            tests/test_congress_data_layer.py \
+            tests/test_tracefour_ingest.py \
+            tests/test_e115_congress_research_guard.py \
+            tests/test_e116_quality.py
+      - name: Retain offline pytest JUnit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: congress-e116-offline-junit
+          path: test-reports/congress-e116-junit.xml
+          if-no-files-found: warn
