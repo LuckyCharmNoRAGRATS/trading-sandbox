@@ -177,11 +177,13 @@ def ingest(trades: list[dict[str, Any]], db: Any, *, member_filter: str = "",
     if not accepted:
         raise SourceError("No matching disclosure records; no writes performed")
     records = list(accepted.values())
-    for start in range(0, len(records), 100):
-        db.table("politician_disclosures").upsert(
-            records[start:start + 100],
-            on_conflict="event_id", ignore_duplicates=True
-        ).execute()
+    if len(records) > 100:
+        raise SourceError("Batch exceeds single-transaction bound; no writes performed")
+    # A single SQL upsert statement avoids the previous partial multi-chunk
+    # commit hazard, but does not make sync-run logging transactional.
+    db.table("politician_disclosures").upsert(
+        records, on_conflict="event_id", ignore_duplicates=True
+    ).execute()
     return {"fetched": len(trades), "accepted": len(records), "invalid": invalid}
 
 
