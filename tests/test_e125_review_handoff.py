@@ -342,4 +342,3 @@ def test_synthetic_candidate_document_forged_pdf_hash_rejected(tmp_path):
     regenerate_all_manifest_hashes(root)
     with pytest.raises(HandoffError, match='falsely claims verified evidence'):
         build_handoff(root)
-
