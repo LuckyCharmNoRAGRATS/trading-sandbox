@@ -12,6 +12,7 @@ on:
       - "live_paper_trader.py"
       - "portfolio_reconciliation.py"
       - "broker_snapshot.py"
+      - "congress_research_guard.py"
       - "order_lifecycle.py"
       - "reconciliation_audit.py"
       - "execution_audit.py"
@@ -20,6 +21,7 @@ on:
       - "docs/E1_12_INDEPENDENT_SAFETY_ASSESSMENT.md"
       - "docs/E1_13_CI_EVIDENCE_AND_READINESS.md"
       - "docs/E1_14_READINESS.md"
+      - "docs/E1_15_CONGRESS_DISCLOSURE_STATUS.md"
       - ".github/workflows/e1-isolated-tests.yml"
       - "migrations/DRAFT_e1_3_1_command_claiming.sql"
       - "migrations/DRAFT_e1_14_fencing.sql"
@@ -79,6 +81,7 @@ jobs:
             tests/test_e112_independent_safety.py \
             tests/test_e113_broker_snapshot.py \
             tests/test_e113_multiprocess_audit.py \
+            tests/test_e115_congress_research_guard.py \
             tests/test_risk_manager.py
       - name: Run offline regression suite
         if: success()
@@ -99,6 +102,7 @@ jobs:
             tests/test_e112_independent_safety.py \
             tests/test_e113_broker_snapshot.py \
             tests/test_e113_multiprocess_audit.py \
+            tests/test_e115_congress_research_guard.py \
             tests/test_risk_manager.py
       - name: Summarize Python test results
         if: always()
