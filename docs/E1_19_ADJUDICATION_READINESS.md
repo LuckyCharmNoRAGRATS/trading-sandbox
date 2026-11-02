@@ -40,7 +40,16 @@ The E1.19 output uses status `awaiting_two_reviewers` for all 72, and the audit 
 
 The generated template `pelosi_e119_two_reviewer_template.csv` contains **144 blank slots** (72 tasks × primary/secondary). Never populate it with fabricated evidence.
 
-When the user later supplies matching House PDFs and two genuine human decisions, prepare a local JSON file with the following structure. These are placeholders, **not performed reviews**:
+The two-reviewer CSV template is directly supported; no manual JSON authoring is required. Populate only genuine completed reviews, leaving all other fields blank. An incomplete populated row fails closed instead of being omitted:
+
+```bash
+python congress_adjudication.py /path/to/e118_outputs \
+  --reviews-csv /path/to/pelosi_e119_two_reviewer_template.csv \
+  --pdf-dir /path/to/user_supplied_pdfs \
+  --output-dir /path/to/e119_outputs
+```
+
+Alternatively, when the user later supplies matching House PDFs and two genuine human decisions, prepare a local JSON file with the following structure. These are placeholders, **not performed reviews**:
 
 ```json
 {
@@ -92,7 +101,7 @@ PYTHONPATH=. E119_E118_DIR=/mnt/data PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
   python -m pytest -q -p no:cacheprovider tests/test_e119_adjudication.py
 ```
 
-**26 passed, 0 failed**, including the exact uploaded 72-task dataset regression, synthetic PDF tests, deliberate hash mismatches, invalid page or transaction quote, same reviewer identity, reviewer disagreements, cross-record tamper, deterministic manifest/ledger, CSV template blanks, and blocked network access.
+**29 passed, 0 failed**, including the exact uploaded 72-task dataset regression, synthetic PDF tests, deliberate hash mismatches, invalid page or transaction quote, same reviewer identity, reviewer disagreements, cross-record tamper, deterministic manifest/ledger, blank/filled/partial CSV template roundtrips, and blocked network access.
 
 The repository workflow has been extended to run the E1.19 suite with the existing socket guard and JUnit artifact; it has no cron, ingestion step, credentials, broker calls, or manual sync trigger. The private uploaded dataset is **not committed** and the private-data test is skipped in public GitHub CI. A GitHub Actions pytest job result has **not** been independently confirmed; a Vercel check is not pytest evidence.
 
