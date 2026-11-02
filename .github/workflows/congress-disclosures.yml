@@ -1,4 +1,4 @@
-name: Congressional disclosures E1.22 offline manual probe tests (no sync)
+name: Congressional disclosures E1.23 offline research pipeline (no sync)
 
 on:
   push:
