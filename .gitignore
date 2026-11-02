@@ -4,3 +4,10 @@ logs/
 data/
 __pycache__/
 *.parquet
+
+# E1.17 user-provided source snapshots and derived unverified research exports
+tracefour_pelosi.json
+pelosi_e117_*.csv
+pelosi_e117_*.json
+pelosi_e117_*.jsonl
+pelosi_e117_*.xml
