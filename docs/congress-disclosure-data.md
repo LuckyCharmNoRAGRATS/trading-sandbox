@@ -1,5 +1,7 @@
 # Congressional Trading Disclosure Data Connector
 
+> **E1.16 STATUS: NOT ACTIVE.** This page describes the original connector design. **Do not follow its earlier activation instructions.** The only authorized E1.16 workflow performs offline tests; no API fetch, database ingest, schedule, merge or trading has been approved. See [the E1.16 readiness and approval runbook](E1_16_CONGRESS_SYNC_READINESS.md).
+
 ## Status
 
 - **Data ingestion only; paper and live brokerage orders are NOT submitted.**
@@ -10,27 +12,24 @@
 - Sync interval: hourly at minute 17 (GitHub Actions scheduled runs can be delayed).
 - No stored records yet until a real ingest succeeds.
 
-## Installation and activation
+## Original activation proposal — blocked pending explicit approval
 
 1. The SQL from `sql/congressional_disclosure_ingestion.sql` has already been applied to the connected Supabase project. Check table permissions and RLS before use elsewhere.
-2. Set GitHub **Actions repository secrets** (Settings → Secrets and variables → Actions):
+2. **Do not set or use production secrets for E1.16 offline tests.** A future specifically authorized one-time ingest would require server-only secrets:
    - `SUPABASE_URL`: the URL of the existing trading-sandbox Supabase project.
    - `SUPABASE_SERVICE_KEY`: a Supabase service-role/secret key. **Never expose in frontend, commit, logs, or chat.**
-3. Merge this branch after reviewing it. GitHub cron workflows run from the default branch only.
-4. Use Actions → *Congressional disclosures sync (data only)* → Run workflow. Check output, then query `politician_sync_runs`.
-5. Normal hourly sync will run after deployment. It does not execute trades.
+3. **Do not merge this branch.** This proposed activation step is not approved.
+4. **Do not dispatch ingestion.** The E1.16 branch replaces the old ingest workflow with offline tests only.
+5. **No hourly sync is enabled.** Scheduling would require separate approval after a controlled first ingest.
 
 Optional local test:
 ```bash
 python -m pip install requests==2.34.2 supabase==2.33.0 pytest==9.1.1
 python -m pytest -q tests/test_congress_ingest.py
-python congress_ingest.py --provider tracefour --dry-run
+python congress_ingest.py --offline-fixture tests/fixtures/tracefour_pelosi_synthetic.json
 ```
 
-Authenticated import (run securely with environment credentials):
-```bash
-python congress_ingest.py --provider tracefour --member 'Nancy Pelosi'
-```
+Authenticated import is **disabled pending explicit approval**. The E1.16 runbook documents the future gated process; do not run it now.
 
 ## Point-in-time data access from Quant AI\n\nThe separate read-only module `congress_data_layer.py` exposes `filings_asof(db, asof=aware_datetime)` and `disclosure_candidates(db, asof=aware_datetime)`. Only filings first observed by our system before the supplied UTC timestamp are returned, so research does not gain access to subsequently ingested records. Candidate filtering accepts explicitly typed common stock/equity only, rejecting option records and unknown asset types. This is not a trading signal and no orders are generated.\n\n## Query stored data
 
