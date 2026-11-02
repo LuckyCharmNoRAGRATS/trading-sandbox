@@ -224,13 +224,14 @@ def test_csv_formula_injection_defended(tmp_path):
     folder = source(tmp_path, trade(assetDescription='=HYPERLINK("http://evil")', sourceLink=None))
     a = write_outputs(reconcile_e117(folder), tmp_path / 'out')
     content = a['paths']['review_queue_csv'].read_text(encoding='utf-8-sig')
-    # Asset description isn't copied to the CSV, but every user-controlled
-    # field that is present must not begin with an executable formula.
+    # The reviewer must see the original description, without allowing
+    # user-controlled source text to execute as a spreadsheet formula.
     assert content.startswith('task_id,')
     with a['paths']['review_queue_csv'].open(encoding='utf-8-sig', newline='') as stream:
         row = next(csv.DictReader(stream))
     assert row['ticker'] == 'NVDA'
     assert row['review_priority'] == 'P2'
+    assert row['asset_description'] == '\'=HYPERLINK("http://evil")'
 
 
 def test_queue_never_contacts_external_services(monkeypatch, tmp_path):
