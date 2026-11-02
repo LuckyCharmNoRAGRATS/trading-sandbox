@@ -13,6 +13,10 @@ import os
 import re
 import sys
 from datetime import date, datetime, timezone
+from pathlib import Path
+
+from congress_quality import (FeedIntegrityError, validate_tracefour_feed,
+                              parse_timestamp, MAX_CACHE_AGE, MAX_CLOCK_SKEW)
 from typing import Any
 
 import requests
@@ -42,7 +46,7 @@ def normalize_trade(row: dict[str, Any], *, provider: str = PROVIDER) -> dict[st
     filing = date.fromisoformat(disclosed)
     if filing < tx:
         raise ValueError("filing date predates transaction date")
-    if tx > date.today() or filing > date.today():
+    if tx > datetime.now(timezone.utc).date() or filing > datetime.now(timezone.utc).date():
         raise ValueError("future-dated transaction or filing")
     actions = {"buy": "buy", "purchase": "buy", "purchased": "buy",
                "sell": "sell", "sale": "sell", "sold": "sell",
@@ -60,6 +64,11 @@ def normalize_trade(row: dict[str, Any], *, provider: str = PROVIDER) -> dict[st
     asset = str(row.get("asset") or row.get("asset_description") or row.get("assetDescription") or "").strip() or None
     chamber = str(row.get("chamber") or "").strip() or None
     provider_id = row.get("id") or row.get("trade_id") or row.get("filingId")
+    if provider == "tracefour":
+        if member.casefold() != "nancy pelosi" or not row.get("filingId"):
+            raise ValueError("Tracefour member identity or filing identifier missing")
+        if not url or not url.startswith("https://"):
+            raise ValueError("Tracefour original HTTPS filing link required")
     if provider_id is not None:
         unique = {"provider": provider, "source_id": str(provider_id)}
     else:
@@ -105,34 +114,49 @@ def fetch_trades(session: requests.Session, *, days: int, limit: int,
         raise SourceError("API feed is not ready; refusing to sync")
     if not all(isinstance(t, dict) for t in body["trades"]):
         raise SourceError("API trades array contains malformed items")
+    if not body["trades"] or len(body["trades"]) >= limit:
+        raise SourceError("CongressInvests empty or at page limit: completeness unverified")
+    try:
+        cache_time = parse_timestamp(body.get("last_updated"), field="last_updated")
+    except FeedIntegrityError as exc:
+        raise SourceError("CongressInvests source freshness metadata missing") from exc
+    lag = datetime.now(timezone.utc) - cache_time
+    if lag > MAX_CACHE_AGE or lag < -MAX_CLOCK_SKEW:
+        raise SourceError("CongressInvests freshness not verified")
     return body["trades"]
 
 
-def fetch_tracefour(session: requests.Session, *, url: str = TRACEFOUR_URL) -> list[dict[str, Any]]:
-    """Fetch the dedicated House disclosure feed for Nancy Pelosi.
+def fetch_tracefour(session: requests.Session, *, url: str = TRACEFOUR_URL,
+                    now: datetime | None = None) -> list[dict[str, Any]]:
+    """Validate the documented data/member + meta.fetchedAt envelope.
 
-    Response schema: data.member + data.trades[]; original filing links supplied.
+    No requests occur unless the caller supplies an explicit session and calls
+    this function. A response at the 500-record cap is quarantined.
     """
-    if not url.startswith("https://"):
-        raise SourceError("Tracefour URL must use HTTPS")
+    if url != TRACEFOUR_URL:
+        raise SourceError("Tracefour member URL must be the documented HTTPS endpoint")
     response = session.get(url, timeout=(10, 30), headers={"Accept": "application/json"})
     response.raise_for_status()
     try:
         body = response.json()
     except ValueError as exc:
         raise SourceError("Tracefour returned invalid JSON") from exc
-    data = body.get("data") if isinstance(body, dict) else None
-    if not isinstance(data, dict) or not isinstance(data.get("trades"), list):
-        raise SourceError("Tracefour response must contain data.trades array")
-    if not isinstance(data.get("member"), dict) or data["member"].get("slug") != "nancy-pelosi":
-        raise SourceError("Unexpected Tracefour member identity")
-    if not all(isinstance(t, dict) for t in data["trades"]):
-        raise SourceError("Tracefour trades array contains malformed items")
-    return data["trades"]
+    try:
+        return validate_tracefour_feed(body, now=now)["trades"]
+    except FeedIntegrityError as exc:
+        raise SourceError(f"Tracefour feed not suitable for ingestion: {exc}") from exc
 
 
 def ingest(trades: list[dict[str, Any]], db: Any, *, member_filter: str = "",
            provider: str = PROVIDER) -> dict[str, int]:
+    """All-or-nothing row validation BEFORE any write is attempted.
+
+    DB upsert chunking is not a cross-request transaction; if a later chunk
+    fails, earlier chunks may have committed. Keep this as a NO-GO until a
+    transactional ingestion RPC exists and has been tested independently.
+    """
+    if not isinstance(trades, list) or not trades:
+        raise SourceError("Empty disclosure batch; no writes performed")
     accepted = {}
     invalid = 0
     for raw in trades:
@@ -144,9 +168,14 @@ def ingest(trades: list[dict[str, Any]], db: Any, *, member_filter: str = "",
             continue
         if member_filter and member_filter.casefold() not in trade["member_name"].casefold():
             continue
+        previous = accepted.get(trade["event_id"])
+        if previous is not None and previous != trade:
+            raise SourceError("Conflicting source rows share an event identifier")
         accepted[trade["event_id"]] = trade
-    if trades and invalid == len(trades):
-        raise SourceError("Every disclosure was invalid; no writes performed")
+    if invalid:
+        raise SourceError(f"{invalid} invalid disclosure(s); refusing partial import")
+    if not accepted:
+        raise SourceError("No matching disclosure records; no writes performed")
     records = list(accepted.values())
     for start in range(0, len(records), 100):
         db.table("politician_disclosures").upsert(
@@ -161,12 +190,41 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--days", type=int, default=90)
     parser.add_argument("--limit", type=int, default=500)
     parser.add_argument("--member", default=os.getenv("POLITICIAN_MEMBER_FILTER", ""))
-    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="network fetch preview only after explicit approval")
+    parser.add_argument("--offline-fixture", type=Path,
+                        help="validate a local synthetic envelope; never contact services")
+    parser.add_argument("--allow-network-fetch", action="store_true",
+                        help="future opt-in only, requires prior user approval")
+    parser.add_argument("--approve-database-write", action="store_true",
+                        help="future data-only sync, also needs CONGRESS_SYNC_APPROVED")
     parser.add_argument("--provider", choices=["tracefour", "congressinvests"], default="tracefour")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     if not (1 <= args.days <= 365 and 1 <= args.limit <= 500):
         parser.error("days must be 1..365 and limit must be 1..500")
+    if args.offline_fixture is not None:
+        if args.allow_network_fetch or args.approve_database_write or args.provider != "tracefour":
+            parser.error("offline fixture cannot be combined with live operations")
+        try:
+            body = json.loads(args.offline_fixture.read_text(encoding="utf-8"))
+            # Frozen fixture time tests schema, not current provider freshness.
+            fixture_at = parse_timestamp(body["meta"]["fetchedAt"], field="fixture fetchedAt")
+            checked = validate_tracefour_feed(body, now=fixture_at)
+            records = [normalize_trade(item, provider="tracefour") for item in checked["trades"]]
+            print(json.dumps({"mode": "synthetic_fixture_only", "validated": len(records),
+                              "live_data_verified": False, "database_writes": False}, sort_keys=True))
+            return 0
+        except (OSError, ValueError, KeyError, TypeError, FeedIntegrityError) as exc:
+            LOG.error("Offline fixture failed: %s", exc)
+            return 1
+    # Fail closed BEFORE constructing HTTP/Supabase clients. This is only a
+    # software safeguard, not a substitute for explicit human approval.
+    if not args.allow_network_fetch:
+        parser.error("Network disabled: explicit --allow-network-fetch required")
+    if not args.dry_run and not (args.approve_database_write and
+                                 os.getenv("CONGRESS_SYNC_APPROVED") == "data-only"):
+        parser.error("Database ingestion disabled pending explicit approval")
     try:
         session = session_with_retries()
         trades = (fetch_tracefour(session) if args.provider == "tracefour"
