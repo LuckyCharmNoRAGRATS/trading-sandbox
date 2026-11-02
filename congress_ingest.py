@@ -22,19 +22,20 @@ from urllib3.util.retry import Retry
 LOG = logging.getLogger("congress_ingest")
 DEFAULT_API = "https://congressinfor-production.up.railway.app"
 PROVIDER = "congressinvests"
+TRACEFOUR_URL = "https://tracefour.com/v1/congress/nancy-pelosi"
 
 
 class SourceError(RuntimeError):
     """Invalid or unavailable source response."""
 
 
-def normalize_trade(row: dict[str, Any]) -> dict[str, Any]:
+def normalize_trade(row: dict[str, Any], *, provider: str = PROVIDER) -> dict[str, Any]:
     if not isinstance(row, dict):
         raise ValueError("trade must be an object")
-    member = str(row.get("member") or row.get("politician") or "").strip()
-    tx_date = str(row.get("tx_date") or row.get("transaction_date") or "").strip()
-    disclosed = str(row.get("disclosed") or row.get("filing_date") or "").strip()
-    action_raw = str(row.get("trade_type") or row.get("transaction_type") or "").strip().lower()
+    member = str(row.get("member") or row.get("politician") or row.get("memberName") or "").strip()
+    tx_date = str(row.get("tx_date") or row.get("transaction_date") or row.get("transactionDate") or "").strip()
+    disclosed = str(row.get("disclosed") or row.get("filing_date") or row.get("disclosureDate") or "").strip()
+    action_raw = str(row.get("trade_type") or row.get("transaction_type") or row.get("type") or "").strip().lower()
     if not member or not tx_date or not disclosed or not action_raw:
         raise ValueError("required member, transaction date, filing date or action missing")
     tx = date.fromisoformat(tx_date)
@@ -52,26 +53,29 @@ def normalize_trade(row: dict[str, Any]) -> dict[str, Any]:
     ticker = str(row.get("ticker") or "").strip().upper() or None
     if ticker and not re.fullmatch(r"[A-Z0-9.\-]{1,16}", ticker):
         ticker = None
-    url = str(row.get("link") or row.get("filing_url") or "").strip() or None
+    url = str(row.get("link") or row.get("filing_url") or row.get("sourceLink") or "").strip() or None
     if url and not url.startswith(("https://", "http://")):
         url = None
-    amount = str(row.get("amount") or row.get("amount_range") or "").strip() or None
-    asset = str(row.get("asset") or row.get("asset_description") or "").strip() or None
+    amount = str(row.get("amount") or row.get("amount_range") or row.get("amountLabel") or "").strip() or None
+    asset = str(row.get("asset") or row.get("asset_description") or row.get("assetDescription") or "").strip() or None
     chamber = str(row.get("chamber") or "").strip() or None
-    provider_id = row.get("id") or row.get("trade_id")
+    provider_id = row.get("id") or row.get("trade_id") or row.get("filingId")
     if provider_id is not None:
-        unique = {"provider": PROVIDER, "source_id": str(provider_id)}
+        unique = {"provider": provider, "source_id": str(provider_id)}
     else:
-        unique = {"provider": PROVIDER, "member": member.casefold(),
+        unique = {"provider": provider, "member": member.casefold(),
                   "ticker": ticker, "transaction_date": tx.isoformat(),
                   "filing_date": filing.isoformat(), "action": action,
                   "asset": asset, "amount": amount, "filing_url": url}
     event_id = hashlib.sha256(json.dumps(unique, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-    return {"event_id": event_id, "provider": PROVIDER, "member_name": member,
+    return {"event_id": event_id, "provider": provider, "member_name": member,
             "chamber": chamber, "ticker": ticker, "trade_type": action,
             "asset_description": asset, "amount_range": amount,
             "transaction_date": tx.isoformat(), "filing_date": filing.isoformat(),
-            "filing_url": url, "raw_record": row}
+            "filing_url": url, "raw_record": row,
+            "asset_type": str(row.get("assetType") or row.get("asset_type") or "").strip() or None,
+            "owner_type": str(row.get("owner") or "").strip() or None,
+            "upstream_ingested_at": row.get("ingestedAt") or None}
 
 
 def session_with_retries() -> requests.Session:
@@ -104,12 +108,36 @@ def fetch_trades(session: requests.Session, *, days: int, limit: int,
     return body["trades"]
 
 
-def ingest(trades: list[dict[str, Any]], db: Any, *, member_filter: str = "") -> dict[str, int]:
+def fetch_tracefour(session: requests.Session, *, url: str = TRACEFOUR_URL) -> list[dict[str, Any]]:
+    """Fetch the dedicated House disclosure feed for Nancy Pelosi.
+
+    Response schema: data.member + data.trades[]; original filing links supplied.
+    """
+    if not url.startswith("https://"):
+        raise SourceError("Tracefour URL must use HTTPS")
+    response = session.get(url, timeout=(10, 30), headers={"Accept": "application/json"})
+    response.raise_for_status()
+    try:
+        body = response.json()
+    except ValueError as exc:
+        raise SourceError("Tracefour returned invalid JSON") from exc
+    data = body.get("data") if isinstance(body, dict) else None
+    if not isinstance(data, dict) or not isinstance(data.get("trades"), list):
+        raise SourceError("Tracefour response must contain data.trades array")
+    if not isinstance(data.get("member"), dict) or data["member"].get("slug") != "nancy-pelosi":
+        raise SourceError("Unexpected Tracefour member identity")
+    if not all(isinstance(t, dict) for t in data["trades"]):
+        raise SourceError("Tracefour trades array contains malformed items")
+    return data["trades"]
+
+
+def ingest(trades: list[dict[str, Any]], db: Any, *, member_filter: str = "",
+           provider: str = PROVIDER) -> dict[str, int]:
     accepted = {}
     invalid = 0
     for raw in trades:
         try:
-            trade = normalize_trade(raw)
+            trade = normalize_trade(raw, provider=provider)
         except (ValueError, TypeError) as exc:
             invalid += 1
             LOG.warning("Disclosure rejected: %s", exc)
@@ -134,24 +162,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=500)
     parser.add_argument("--member", default=os.getenv("POLITICIAN_MEMBER_FILTER", ""))
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--provider", choices=["tracefour", "congressinvests"], default="tracefour")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     if not (1 <= args.days <= 365 and 1 <= args.limit <= 500):
         parser.error("days must be 1..365 and limit must be 1..500")
     try:
-        trades = fetch_trades(session_with_retries(), days=args.days, limit=args.limit)
+        session = session_with_retries()
+        trades = (fetch_tracefour(session) if args.provider == "tracefour"
+                  else fetch_trades(session, days=args.days, limit=args.limit))
         if args.dry_run:
-            rows = [normalize_trade(r) for r in trades]
+            rows = [normalize_trade(r, provider=args.provider) for r in trades]
             print(json.dumps({"fetched": len(trades), "validated": len(rows),
                               "sample": rows[:2]}, indent=2))
             return 0
         from supabase import create_client
         db = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
         run = db.table("politician_sync_runs").insert(
-            {"provider": PROVIDER, "status": "running"}).execute()
+            {"provider": args.provider, "status": "running"}).execute()
         run_id = run.data[0]["run_id"]
         try:
-            result = ingest(trades, db, member_filter=args.member)
+            result = ingest(trades, db, member_filter=args.member, provider=args.provider)
             db.table("politician_sync_runs").update({
                 "status": "success", "fetched": result["fetched"],
                 "accepted": result["accepted"],
