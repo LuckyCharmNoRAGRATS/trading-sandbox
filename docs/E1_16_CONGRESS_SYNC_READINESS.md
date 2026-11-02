@@ -65,3 +65,13 @@ PYTHONPATH=tests:. python -m pytest -p e116_network_guard -q \
 4. **Approval C — recurring schedule:** a **separate later decision** after a healthy first sync and alerting. Do not install or activate cron just because a one-time ingest succeeded. GitHub cron workflows run from the default branch; no merge is authorized today.
 
 **Open blockers:** no observed real data, no verified live provider freshness, no independent CI job evidence, no end-to-end Supabase write/rollback test, no cross-source official-filing reconciliation, 500-record history cap, and no approved recurring service. **No trading or alpha claims.**
+
+## Approval A recovery — offline saved-response validation
+
+The initially approved read-only Tracefour HTTP GET could not complete from the assistant environment because of DNS resolution. **No actual JSON response was acquired, and no second HTTP GET was made.** E1.16 now includes `congress_preview.py`, which validates an already-downloaded source file using the **actual current UTC time**, rather than the historical fixture's cached timestamp. It reports source-cache age, unique source filing IDs, dates, reporting lags, asset types and ownership with no IO beyond reading the local file.
+
+A new standalone offline test suite, `tests/test_e116_offline_preview.py`, adds 13 tests for stale/future caches, bad member IDs, malformed JSON, filing-ID collisions, invalid dates, option classification, and the 500-row boundary. **97 local offline tests passed in 0.15 seconds** with the network guard in place. The CI workflow was updated to register the sixth suite; GitHub Actions results have not yet been retrieved independently.
+
+**Next user step:** save the API response locally with a one-time read-only `curl.exe` command and upload the JSON. Full instructions: [E1.16 local response validation](E1_16_LOCAL_SOURCE_PREVIEW.md). If the endpoint cannot be reached from the user's computer, provide the failure output or request permission to evaluate an alternative source; do not fabricate live data.
+
+**Approval B/C remain blocked:** no Supabase writes, no recurring schedule, no trading and no merge or intentional deploy.
