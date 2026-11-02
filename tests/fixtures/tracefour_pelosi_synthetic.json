@@ -1,0 +1,30 @@
+{
+  "data": {
+    "member": {"slug": "nancy-pelosi", "memberName": "Nancy Pelosi"},
+    "trades": [
+      {
+        "filingId": "synthetic-only-001",
+        "memberSlug": "nancy-pelosi",
+        "memberName": "Nancy Pelosi",
+        "chamber": "house",
+        "ticker": "TEST",
+        "assetDescription": "SYNTHETIC TEST ASSET, NOT A REAL FILING",
+        "assetType": "Stock",
+        "type": "Purchase",
+        "owner": "Spouse",
+        "transactionDate": "2026-05-29",
+        "disclosureDate": "2026-06-24",
+        "amountLabel": "$1,001 - $15,000",
+        "sourceLink": "https://example.invalid/synthetic-not-a-real-filing.pdf",
+        "ingestedAt": "2026-06-24T18:58:56.037Z"
+      }
+    ]
+  },
+  "error": null,
+  "meta": {
+    "count": 1,
+    "fetchedAt": "2026-09-09T18:33:18.628Z",
+    "source": "synthetic_fixture_not_live_data",
+    "license": "https://creativecommons.org/licenses/by/4.0/"
+  }
+}
