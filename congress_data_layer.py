@@ -25,7 +25,7 @@ def filings_asof(db: Any, *, member: str = "Nancy Pelosi",
     result = (db.table("politician_disclosures")
               .select("event_id,provider,member_name,chamber,ticker,trade_type,"
                       "asset_description,amount_range,transaction_date,"
-                      "filing_date,filing_url,first_seen_at")
+                      "filing_date,filing_url,first_seen_at,asset_type,owner_type,upstream_ingested_at")
               .ilike("member_name", f"%{member.strip()}%")
               .lte("first_seen_at", timestamp)
               .order("first_seen_at", desc=False)
@@ -39,7 +39,8 @@ def disclosure_candidates(db: Any, *, asof: datetime,
     """Research candidates only; caller must validate options, eligibility, risk."""
     records = filings_asof(db, member=member, asof=asof, limit=limit)
     return [row for row in records
-            if row.get("ticker") and row.get("trade_type") in {"buy", "sell"}]
+            if row.get("ticker") and row.get("trade_type") in {"buy", "sell"}
+            and str(row.get("asset_type") or "").casefold() in {"stock", "common stock", "equity"}]
 
 
 def connect_from_env() -> Any:
