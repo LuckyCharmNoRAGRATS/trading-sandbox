@@ -134,12 +134,12 @@ def test_cache_filename_generation_cross_platform():
     """Verify generated Parquet filenames contain no asterisks, spaces, or illegal characters."""
     from alpaca.data.timeframe import TimeFrame
 
-    filename = DataLayer.build_cache_filename(symbol="SPY", timeframe=TimeFrame.Day, days=180)
-    assert filename == "SPY_1Day_180d.parquet"
+    filename = DataLayer.build_cache_filename(symbol="SPY", timeframe=TimeFrame.Day)
+    assert filename == "SPY_1Day_master.parquet"
 
-    # Verify sanitization if dirty input with asterisks/spaces is passed
-    dirty_filename = DataLayer.build_cache_filename(symbol=" spy* ", timeframe=" *1Day* ", days=365)
-    assert dirty_filename == "SPY_1Day_365d.parquet"
+    # The cache is now a time-window independent master file. Verify sanitization.
+    dirty_filename = DataLayer.build_cache_filename(symbol=" spy* ", timeframe=" *1Day* ")
+    assert dirty_filename == "SPY_1Day_master.parquet"
 
     forbidden_chars = set('<>:"/\\|?* ')
     assert not (forbidden_chars & set(filename))
