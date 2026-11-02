@@ -4,9 +4,9 @@
 
 - **Data ingestion only; paper and live brokerage orders are NOT submitted.**
 - Default monitored person in the hourly workflow: **Nancy Pelosi**.
-- Live provider: CongressInvests API. This is a documented alternative to pelosi.fun, whose authenticated upstream endpoint is not connected here.
+- Scheduled provider: Tracefour Nancy Pelosi member disclosures API (read-only, keyless, refreshed hourly). CongressInvests remains a selectable alternative. Neither is the unconnected pelosi.fun upstream API.
 - Storage: the existing `trading-sandbox` Supabase project, in private `politician_disclosures` and `politician_sync_runs` tables.
-- Source: https://congressinfor-production.up.railway.app/ (100 requests/day free tier as documented on Nov 2, 2026).
+- Primary source: https://tracefour.com/api-docs/congress-trading-api (keyless 60 requests/hour). Source compilation CC BY 4.0; retain attribution links. Alternative: https://congressinfor-production.up.railway.app/.
 - Sync interval: hourly at minute 17 (GitHub Actions scheduled runs can be delayed).
 - No stored records yet until a real ingest succeeds.
 
@@ -24,19 +24,19 @@ Optional local test:
 ```bash
 python -m pip install requests==2.34.2 supabase==2.33.0 pytest==9.1.1
 python -m pytest -q tests/test_congress_ingest.py
-python congress_ingest.py --days 30 --limit 500 --dry-run
+python congress_ingest.py --provider tracefour --dry-run
 ```
 
 Authenticated import (run securely with environment credentials):
 ```bash
-python congress_ingest.py --days 90 --limit 500 --member 'Nancy Pelosi'
+python congress_ingest.py --provider tracefour --member 'Nancy Pelosi'
 ```
 
-## Query stored data
+## Point-in-time data access from Quant AI\n\nThe separate read-only module `congress_data_layer.py` exposes `filings_asof(db, asof=aware_datetime)` and `disclosure_candidates(db, asof=aware_datetime)`. Only filings first observed by our system before the supplied UTC timestamp are returned, so research does not gain access to subsequently ingested records. Candidate filtering accepts explicitly typed common stock/equity only, rejecting option records and unknown asset types. This is not a trading signal and no orders are generated.\n\n## Query stored data
 
 ```sql
 select member_name, ticker, trade_type, transaction_date,
-       filing_date, first_seen_at, amount_range, filing_url
+       filing_date, first_seen_at, amount_range, asset_type, owner_type, filing_url
 from public.politician_disclosures
 where member_name ilike '%Pelosi%'
 order by filing_date desc, first_seen_at desc
@@ -55,10 +55,10 @@ select * from public.politician_sync_runs order by started_at desc limit 10;
 - For backtests, **never assume the trade was knowable at `transaction_date`**. In the absence of exact publication timestamps, use a conservatively delayed first executable price.
 - Rows lacking valid required dates are rejected. No silent fallback to transaction date as filing date.
 - `event_id` is a SHA-256 of provider identifier or disclosed fields. If the provider omits stable IDs, perfectly identical same-day records may collapse. This limitation should be addressed via source filing IDs before making performance claims.
-- Feeds can be truncated by their maximum result limit and provider history window. For complete long-history backfills, add validated paging or source-specific historical exports.
+- The Tracefour member endpoint returns at most 500 disclosed transactions. If the source grows beyond that cap, a full historical export or paging strategy is needed. The optional CongressInvests recent-trades endpoint can also truncate global results.
 - Hourly polling is not a guarantee of hourly new official filings; upstream refresh lag and GitHub schedule delays can be significant.
 - The database tables have RLS enabled and no anonymous/authenticated access. The backend service-role credential is intended for server use only.
-- No ingestion of the requested Pelosi.fun RapidAPI source is attempted until its authenticated API endpoints, license, and schema are provided and validated. Source attribution must be retained.
+- No ingestion of the requested Pelosi.fun RapidAPI source is attempted until its authenticated API endpoints, license, and schema are provided and validated. Tracefour's compilation requires source attribution (CC BY 4.0).\n- The `asset_type`, `owner_type`, and `upstream_ingested_at` provenance fields were added in a second applied Supabase migration; stock options are excluded from ordinary equity candidates.
 
 ## Next milestone
 
