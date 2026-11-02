@@ -1,4 +1,4 @@
-name: Congressional disclosures E1.16 offline readiness (no sync)
+name: Congressional disclosures E1.17 offline quarantine (no sync)
 
 on:
   push:
@@ -8,10 +8,12 @@ on:
       - "congress_ingest.py"
       - "congress_quality.py"
       - "congress_preview.py"
+      - "congress_remediation.py"
       - "congress_data_layer.py"
       - "congress_research_guard.py"
       - "tests/**"
       - "docs/E1_16_CONGRESS_SYNC_READINESS.md"
+      - "docs/E1_17_CONGRESS_DISCLOSURE_REMEDIATION.md"
       - ".github/workflows/congress-disclosures.yml"
 
 permissions:
@@ -24,7 +26,7 @@ concurrency:
 jobs:
   offline-tests:
     if: github.ref == 'refs/heads/feature/e116-congress-readiness'
-    name: E1.16 no-network contract validation
+    name: E1.17 no-network contract validation
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
@@ -57,22 +59,24 @@ jobs:
             tests/test_tracefour_ingest.py \
             tests/test_e115_congress_research_guard.py \
             tests/test_e116_quality.py \
-            tests/test_e116_offline_preview.py
+            tests/test_e116_offline_preview.py \
+            tests/test_e117_remediation.py
       - name: Run no-network regression suite
         run: |
           mkdir -p test-reports
           PYTHONPATH=tests:. python -m pytest -p e116_network_guard -q --tb=short \
-            --junitxml=test-reports/congress-e116-junit.xml \
+            --junitxml=test-reports/congress-e117-junit.xml \
             tests/test_congress_ingest.py \
             tests/test_congress_data_layer.py \
             tests/test_tracefour_ingest.py \
             tests/test_e115_congress_research_guard.py \
             tests/test_e116_quality.py \
-            tests/test_e116_offline_preview.py
+            tests/test_e116_offline_preview.py \
+            tests/test_e117_remediation.py
       - name: Retain offline pytest JUnit evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: congress-e116-offline-junit
+          name: congress-e117-offline-junit
           path: test-reports/congress-e116-junit.xml
           if-no-files-found: warn
