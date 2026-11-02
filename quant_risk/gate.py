@@ -57,7 +57,6 @@ class RiskGate:
             if (start - equity) / start >= self.limits.daily_drawdown_fraction:
                 self._daily_latched_session = snapshot.session_id
                 self._active_session = snapshot.session_id
-                self._reservations.clear()
                 return reject("DAILY_DRAWDOWN", ident)
 
             if ident in self._seen_intents:
@@ -87,7 +86,6 @@ class RiskGate:
             return False
         with self._lock:
             self._manual_reason = reason
-            self._reservations.clear()
             return True
 
     def clear_manual_kill(
