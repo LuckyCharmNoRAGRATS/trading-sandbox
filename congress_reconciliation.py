@@ -36,7 +36,7 @@ MAX_RECORDS = 499
 QUEUE_COLS = [
     'task_id', 'queue_status', 'review_priority', 'row_index', 'ticker',
     'transaction_date', 'filing_date', 'owner_type', 'asset_type_reported',
-    'action_reported', 'amount_label', 'source_filing_id', 'official_filing_url',
+    'asset_description', 'action_reported', 'amount_label', 'source_filing_id', 'official_filing_url',
     'suggested_evidence_url_unverified', 'candidate_action_from_id_unverified',
     'candidate_asset_interpretation_unverified', 'semantic_group_id',
     'semantic_group_size', 'related_row_indices', 'reason_codes', 'review_tasks',
