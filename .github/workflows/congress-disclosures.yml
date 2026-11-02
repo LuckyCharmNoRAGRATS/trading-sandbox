@@ -1,4 +1,4 @@
-name: Congressional disclosures E1.23 offline research pipeline (no sync)
+name: Congressional disclosures E1.24 offline release gate (no sync)
 
 on:
   push:
@@ -15,6 +15,7 @@ on:
       - "congress_connection_diagnostic.py"
       - "congress_manual_probe.py"
       - "congress_research_pipeline.py"
+      - "congress_release_gate.py"
       - "congress_data_layer.py"
       - "congress_research_guard.py"
       - "tests/**"
@@ -26,6 +27,7 @@ on:
       - "docs/E1_21_TRACEFOUR_CONNECTION_DIAGNOSTICS.md"
       - "docs/E1_22_MANUAL_SINGLE_GET_READINESS.md"
       - "docs/E1_23_READ_ONLY_RESEARCH_PIPELINE.md"
+      - "docs/E1_24_RELEASE_READINESS_GATE.md"
       - ".github/workflows/congress-disclosures.yml"
 
 permissions:
@@ -38,7 +40,7 @@ concurrency:
 jobs:
   offline-tests:
     if: github.ref == 'refs/heads/feature/e116-congress-readiness'
-    name: E1.23 no-network research and integration validation
+    name: E1.24 no-network release hold validation
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
@@ -79,12 +81,13 @@ jobs:
             tests/test_e121_connection_diagnostic.py \
             tests/test_e122_manual_probe.py \
             tests/test_e123_manifest_bridge.py \
-            tests/test_e123_research_pipeline.py
+            tests/test_e123_research_pipeline.py \
+            tests/test_e124_release_gate.py
       - name: Run no-network regression suite
         run: |
           mkdir -p test-reports
           PYTHONPATH=tests:. python -m pytest -p e116_network_guard -q --tb=short \
-            --junitxml=test-reports/congress-e123-junit.xml \
+            --junitxml=test-reports/congress-e124-junit.xml \
             tests/test_congress_ingest.py \
             tests/test_congress_data_layer.py \
             tests/test_tracefour_ingest.py \
@@ -98,11 +101,12 @@ jobs:
             tests/test_e121_connection_diagnostic.py \
             tests/test_e122_manual_probe.py \
             tests/test_e123_manifest_bridge.py \
-            tests/test_e123_research_pipeline.py
+            tests/test_e123_research_pipeline.py \
+            tests/test_e124_release_gate.py
       - name: Retain offline pytest JUnit evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: congress-e123-offline-junit
-          path: test-reports/congress-e123-junit.xml
+          name: congress-e124-offline-junit
+          path: test-reports/congress-e124-junit.xml
           if-no-files-found: warn
