@@ -380,10 +380,47 @@ def write_outputs(result: dict, output_dir: str | Path) -> dict:
     return {"paths": paths, "manifest": output_manifest}
 
 
+def read_review_csv(path: Path) -> list[dict]:
+    """Load the generated two-reviewer CSV, ignoring only truly blank slots.
+
+    A partly filled slot remains a review attempt and must be validated; it
+    cannot silently disappear from the audit. All source task IDs/roles remain
+    bound to the input row, and the downstream review validator enforces them.
+    """
+    data = _safe_bytes(path)
+    try:
+        content = data.decode("utf-8-sig")
+        reader = csv.DictReader(content.splitlines())
+        if list(reader.fieldnames or []) != list(REVIEW_COLUMNS):
+            raise AdjudicationError("Review CSV columns differ from E1.19 template")
+        reviews = []
+        for row in reader:
+            if None in row or any(value is None for value in row.values()):
+                raise AdjudicationError("Malformed CSV review row")
+            # task_id, row_index and role are prefilled in the blank template.
+            editable = [key for key in REVIEW_COLUMNS
+                        if key not in {"task_id", "row_index", "role"}]
+            if all(not str(row.get(key) or "").strip() for key in editable):
+                continue
+            try:
+                row["row_index"] = int(row["row_index"])
+                row["page_number"] = int(row["page_number"])
+            except (TypeError, ValueError) as exc:
+                raise AdjudicationError("Populated CSV review requires integer row/page") from exc
+            reviews.append(row)
+        return reviews
+    except (UnicodeError, csv.Error) as exc:
+        raise AdjudicationError("Invalid UTF-8 review CSV") from exc
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("e118_directory", type=Path)
-    parser.add_argument("--reviews-json", type=Path, help="local JSON file: {reviews:[...]} (optional)")
+    choices = parser.add_mutually_exclusive_group()
+    choices.add_argument("--reviews-json", type=Path,
+                         help="local JSON file: {reviews:[...]} (optional)")
+    choices.add_argument("--reviews-csv", type=Path,
+                         help="locally completed two-reviewer CSV template (optional)")
     parser.add_argument("--pdf-dir", type=Path, help="directory of explicitly supplied local PDFs")
     parser.add_argument("--output-dir", required=True, type=Path)
     args = parser.parse_args(argv)
@@ -393,6 +430,8 @@ def main(argv: list[str] | None = None) -> int:
             if not isinstance(data, dict) or not isinstance(data.get("reviews"), list):
                 raise AdjudicationError("Review JSON requires a reviews array")
             decisions = data["reviews"]
+        elif args.reviews_csv:
+            decisions = read_review_csv(args.reviews_csv)
         else:
             decisions = []
         if decisions and args.pdf_dir is None:
