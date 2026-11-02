@@ -7,6 +7,7 @@ on:
     paths:
       - "congress_ingest.py"
       - "congress_quality.py"
+      - "congress_preview.py"
       - "congress_data_layer.py"
       - "congress_research_guard.py"
       - "tests/**"
@@ -55,7 +56,8 @@ jobs:
             tests/test_congress_data_layer.py \
             tests/test_tracefour_ingest.py \
             tests/test_e115_congress_research_guard.py \
-            tests/test_e116_quality.py
+            tests/test_e116_quality.py \
+            tests/test_e116_offline_preview.py
       - name: Run no-network regression suite
         run: |
           mkdir -p test-reports
@@ -65,7 +67,8 @@ jobs:
             tests/test_congress_data_layer.py \
             tests/test_tracefour_ingest.py \
             tests/test_e115_congress_research_guard.py \
-            tests/test_e116_quality.py
+            tests/test_e116_quality.py \
+            tests/test_e116_offline_preview.py
       - name: Retain offline pytest JUnit evidence
         if: always()
         uses: actions/upload-artifact@v4
