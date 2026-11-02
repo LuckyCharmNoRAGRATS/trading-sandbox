@@ -180,6 +180,16 @@ class QuantRiskTests(unittest.TestCase):
         self.assertTrue(gate.preflight(replace(self.intent, intent_id="new-session",
                                               quote_at=next_day), fresh, next_day).allowed)
 
+    def test_kill_retains_unreconciled_reservations(self):
+        gate = RiskGate()
+        self.assertTrue(gate.preflight(self.intent, self.snapshot, self.now).allowed)
+        gate.trip_manual_kill("operator emergency")
+        self.assertEqual(gate.state.reserved_intents, 1)
+        self.assertTrue(gate.clear_manual_kill(self.snapshot, self.now, "broker reconciled"))
+        self.assertEqual(gate.preflight(replace(self.intent, intent_id="another"),
+                                        self.snapshot, self.now).reason_code, "SYMBOL_RESERVED")
+        self.assertTrue(gate.release_reservation("test-1"))
+
     def test_manual_kill_and_explicit_recovery(self):
         gate = RiskGate()
         self.assertTrue(gate.trip_manual_kill("operator emergency"))
