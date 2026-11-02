@@ -67,11 +67,57 @@ def _read_json(path: Path) -> Any:
         raise AdjudicationError(f"Invalid JSON: {path.name}") from exc
 
 
+
+def _compatible_e118_manifest(source: Any) -> dict:
+    """Adapt E1.18's current schema without altering its SHA-256 evidence.
+
+    E1.18.1 writes newer descriptive keys; E1.19/20 originally read the
+    earlier, more compact schema. Normalize *in memory* and reject any
+    contradictory alias or new-format authority/verification claim.
+    The original manifest bytes remain untouched for ledger anchoring.
+    """
+    if not isinstance(source, dict):
+        raise AdjudicationError("Invalid E1.18 manifest object")
+    if "total_source_rows" not in source:
+        return source  # Previously published compact E1.18 manifest.
+    for gate, required in (
+        ("auto_reclassified_rows", 0), ("auto_deduplicated_rows", 0),
+        ("source_verified_rows", 0), ("original_pdf_bytes_reviewed", 0),
+        ("ingestion_approved", False), ("execution_approved", False),
+        ("first_seen_at_estimated", False),
+    ):
+        if type(source.get(gate)) is not type(required) or source[gate] != required:
+            raise AdjudicationError("Unsafe or incomplete E1.18 manifest: " + gate)
+    aliases = {
+        "source_rows": "total_source_rows",
+        "source_sha256": "source_snapshot_sha256",
+        "clean_unverified": "clean_research_only_unverified_rows",
+        "review_queue": "quarantined_human_review_rows",
+        "auto_promotions": "auto_reclassified_rows",
+        "original_pdf_files_reviewed": "original_pdf_bytes_reviewed",
+        "approval_for_ingestion": "ingestion_approved",
+        "approval_for_trading": "execution_approved",
+        "output_sha256": "local_output_sha256",
+    }
+    result = dict(source)
+    for old, current in aliases.items():
+        if current not in source:
+            raise AdjudicationError("Missing current E1.18 manifest field: " + current)
+        if old in source and source[old] != source[current]:
+            raise AdjudicationError("Conflicting E1.18 manifest field aliases: " + old)
+        result[old] = source[current]
+    # Distinct duplicate groups must not be silently claimed as resolved.
+    if type(source.get("semantic_duplicate_groups_pending")) is not int:
+        raise AdjudicationError("Missing semantic duplicate group count")
+    return result
+
+
 def load_e118(directory: str | Path) -> tuple[dict, list[dict]]:
     """Verify E1.18 manifest, queue, all preserved data and frozen statuses."""
     base = Path(directory)
-    manifest = _read_json(base / MANIFEST_FILE)
-    if not isinstance(manifest, dict) or manifest.get("source_rows") not in range(1, 500):
+    manifest = _compatible_e118_manifest(_read_json(base / MANIFEST_FILE))
+    if (not isinstance(manifest, dict) or type(manifest.get("source_rows")) is not int
+            or not 1 <= manifest["source_rows"] < 500):
         raise AdjudicationError("Invalid E1.18 source manifest")
     if manifest.get("approval_for_ingestion") is not False or manifest.get("approval_for_trading") is not False:
         raise AdjudicationError("Unsafe source-manifest approval flags")
