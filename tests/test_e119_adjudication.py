@@ -13,7 +13,7 @@ import pytest
 
 from congress_adjudication import (
     AdjudicationError, adjudicate, canonical, digest, load_e118,
-    verify_ledger, write_outputs, main,
+    verify_ledger, write_outputs, read_review_csv, main,
 )
 
 EXCERPT = 'NVDA Purchase 2026-07-24 500001 to 1000000 stock shares'
@@ -309,6 +309,48 @@ def test_cli_without_evidence_creates_pending_queue(tmp_path, capsys):
     out = json.loads(capsys.readouterr().out)
     assert out['summary']['review_task_count'] == 2
     assert out['summary']['review_events'] == 0
+
+
+def test_generated_blank_csv_roundtrips_without_fake_decisions(tmp_path, capsys):
+    src, docs, one, second = checked(tmp_path)
+    output = write_outputs(adjudicate(src, [], docs), tmp_path / 'templates')
+    assert read_review_csv(output['paths']['template']) == []
+    assert main([str(src), '--reviews-csv', str(output['paths']['template']),
+                 '--output-dir', str(tmp_path / 'roundtrip')]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result['summary']['review_events'] == 0
+    assert result['summary']['review_task_count'] == 2
+
+
+def test_completed_csv_review_roundtrips_with_real_pdf_bytes(tmp_path, capsys):
+    src, docs, one, second = checked(tmp_path)
+    blank = write_outputs(adjudicate(src, [], docs), tmp_path / 'template')
+    with blank['paths']['template'].open('r', encoding='utf-8-sig', newline='') as stream:
+        rows = list(csv.DictReader(stream))
+    rows[0].update({k: str(v) for k,v in one.items()})
+    with blank['paths']['template'].open('w', encoding='utf-8-sig', newline='') as stream:
+        writer = csv.DictWriter(stream, fieldnames=rows[0])
+        writer.writeheader()
+        writer.writerows(rows)
+    assert main([str(src), '--reviews-csv', str(blank['paths']['template']),
+                 '--pdf-dir', str(docs), '--output-dir', str(tmp_path / 'reviewed')]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result['summary']['review_events'] == 1
+    assert result['summary']['source_authenticated_pdf_count'] == 0
+
+
+def test_partly_completed_csv_review_never_silently_disappears(tmp_path):
+    src, docs, one, second = checked(tmp_path)
+    blank = write_outputs(adjudicate(src, [], docs), tmp_path / 'template')
+    with blank['paths']['template'].open('r', encoding='utf-8-sig', newline='') as stream:
+        rows = list(csv.DictReader(stream))
+    rows[0]['reviewer_id'] = 'analyst1'
+    with blank['paths']['template'].open('w', encoding='utf-8-sig', newline='') as stream:
+        writer = csv.DictWriter(stream, fieldnames=rows[0])
+        writer.writeheader()
+        writer.writerows(rows)
+    with pytest.raises(AdjudicationError, match='requires integer row/page'):
+        read_review_csv(blank['paths']['template'])
 
 
 def test_cli_refuses_reviews_without_pdf_directory(tmp_path):
