@@ -78,5 +78,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: congress-e117-offline-junit
-          path: test-reports/congress-e116-junit.xml
+          path: test-reports/congress-e117-junit.xml
           if-no-files-found: warn
