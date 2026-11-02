@@ -112,3 +112,28 @@ def test_invalid_indexes_rejected():
     naive.index = naive.index.tz_localize(None)
     with pytest.raises(ValueError):
         make_lagged_features(naive)
+
+
+def test_preprocessor_fitted_only_on_purged_pre_calibration_history():
+    from quant_ml.research import _dataset, _fit_one
+    features, events = dataset()
+    x, e = _dataset(features, events)
+    train_x, train_e = x.iloc[:210], e.iloc[:210]
+    classifier, _ = _fit_one(train_x, train_e, seed=42, calibration_fraction=.2)
+    cut = int(len(train_x) * .8)
+    cal_start = train_e.index[cut]
+    eligible = train_e.iloc[:cut].event_end < cal_start
+    expected = train_x.iloc[:cut].loc[eligible].mean().to_numpy()
+    np.testing.assert_allclose(classifier.named_steps["scaler"].mean_, expected)
+    # Calibration-only perturbations must not change preprocessor parameters.
+    changed = train_x.copy()
+    changed.iloc[cut:] += 1_000_000
+    refit, _ = _fit_one(changed, train_e, seed=42, calibration_fraction=.2)
+    np.testing.assert_allclose(refit.named_steps["scaler"].mean_, expected)
+
+
+def test_folds_fail_closed_without_two_classes():
+    features, events = dataset()
+    events["target"] = 0
+    with pytest.raises(ValueError, match="both classes"):
+        run_research_experiment(features, events)
