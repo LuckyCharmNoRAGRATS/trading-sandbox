@@ -11,3 +11,9 @@ pelosi_e117_*.csv
 pelosi_e117_*.json
 pelosi_e117_*.jsonl
 pelosi_e117_*.xml
+
+# E1.18 local-only review evidence and generated artifacts
+pelosi_e118_*.csv
+pelosi_e118_*.jsonl
+pelosi_e118_*.json
+pelosi_e118_*.xml
