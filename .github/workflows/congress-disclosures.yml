@@ -29,7 +29,7 @@ jobs:
       - name: Install pinned connector dependencies
         run: python -m pip install requests==2.34.2 supabase==2.33.0 pytest==9.1.1
       - name: Verify no-network ingestion tests
-        run: python -m pytest -q tests/test_congress_ingest.py
+        run: python -m pytest -q tests/test_congress_ingest.py tests/test_congress_data_layer.py
       - name: Validate database credentials are configured
         run: |
           test -n "$SUPABASE_URL" || { echo 'SUPABASE_URL secret missing'; exit 1; }
