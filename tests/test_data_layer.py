@@ -22,7 +22,7 @@ def test_data_validation_and_deduplication(mock_data_layer, tmp_path, monkeypatc
     monkeypatch.setattr(DataLayer, "get_cache_path", lambda *args, **kwargs: cache_path)
     
     # Create fake cached data with a gap and a zero price
-    base_time = pd.Timestamp(datetime.now(timezone.utc) - timedelta(days=5))
+    base_time = pd.Timestamp(datetime.now(timezone.utc) - timedelta(days=4))
     df_cache = pd.DataFrame({
         "open": [150.0, 151.0],
         "high": [152.0, 153.0],

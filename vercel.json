@@ -9,7 +9,8 @@
   ],
   "git": {
     "deploymentEnabled": {
-      "fix/e1-safe-execution": false
+      "fix/e1-safe-execution": false,
+      "integration/e1-test-baseline": false
     }
   }
 }
