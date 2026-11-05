@@ -1,5 +1,5 @@
 """Integration regressions for the recovered E1 command interface.
-The legacy OMS bypass remains a strict expected failure and release blocker.
+The retired legacy OMS must never construct a client or submit an order.
 All clients are mocks; no execution permission is granted by these tests.
 """
 from types import SimpleNamespace
@@ -71,41 +71,37 @@ def test_automated_entries_remain_disabled_in_recovered_worker(monkeypatch):
     worker.trading_client.submit_order.assert_not_called()
     worker.trading_client.close_position.assert_not_called()
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="ExecutionOMS currently calls size_position, bypassing validate_and_size_order.",
-)
-def test_oms_entry_respects_full_pre_trade_validation(monkeypatch):
-    """The secondary OMS must reject a trade rejected by the central risk gate."""
-    broker = Mock()
-    broker.get_account.return_value = SimpleNamespace(
-        equity="100000", last_equity="100000", trading_blocked=False
-    )
-    broker.submit_order.return_value = SimpleNamespace(id="offline-order")
+@pytest.mark.parametrize("enabled", ["false", "true"])
+def test_retired_oms_constructor_never_creates_broker_client(monkeypatch, enabled):
+    monkeypatch.setenv("E1_EXECUTION_ENABLED", enabled)
+    broker_factory = Mock(side_effect=AssertionError("Must not construct broker"))
+    monkeypatch.setattr(quant_engine, "TradingClient", broker_factory)
+    oms = quant_engine.ExecutionOMS(quant_engine.QuantConfig(
+        api_key="synthetic", secret_key="synthetic", discord_webhook=""))
+    assert oms.trading_client is None
+    broker_factory.assert_not_called()
 
+
+@pytest.mark.parametrize("enabled", ["false", "true"])
+@pytest.mark.parametrize("side", [quant_engine.OrderSide.BUY, quant_engine.OrderSide.SELL])
+def test_retired_oms_cannot_bypass_command_workflow(monkeypatch, enabled, side):
+    monkeypatch.setenv("E1_EXECUTION_ENABLED", enabled)
+    monkeypatch.setenv("E1_RELEASE_APPROVED", "true")
+    # Also cover old instances with a client already attached.
     oms = quant_engine.ExecutionOMS.__new__(quant_engine.ExecutionOMS)
-    oms.config = quant_engine.QuantConfig(
-        api_key="", secret_key="", discord_webhook=""
-    )
+    broker = Mock()
     oms.trading_client = broker
     oms.send_discord_alert = Mock()
+    with pytest.raises(quant_engine.LegacyExecutionDisabledError, match="retired"):
+        oms.execute_signal("SPY", 100.0, 95.0, side)
+    assert broker.mock_calls == []
+    oms.send_discord_alert.assert_not_called()
 
-    risk_policy = Mock()
-    risk_policy.check_daily_circuit_breaker.return_value = True
-    risk_policy.size_position.return_value = 10
-    risk_policy.validate_and_size_order.return_value = 0
-    monkeypatch.setattr(quant_engine, "RiskEngine", Mock(return_value=risk_policy))
 
-    result = oms.execute_signal(
-        symbol="SPY", entry_price=100.0, stop_loss=95.0,
-        side=quant_engine.OrderSide.BUY,
-    )
-
-    risk_policy.validate_and_size_order.assert_called_once()
-    broker.submit_order.assert_not_called()
-    assert result is None
-
+def test_retired_oms_rejects_before_reading_instance_state():
+    oms = quant_engine.ExecutionOMS.__new__(quant_engine.ExecutionOMS)
+    with pytest.raises(quant_engine.LegacyExecutionDisabledError, match="No order was submitted"):
+        oms.execute_signal("SPY", 100.0, 95.0, quant_engine.OrderSide.BUY)
 
 
 def test_stats_import_does_not_fetch_even_when_cache_is_available(monkeypatch):

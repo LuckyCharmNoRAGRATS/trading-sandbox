@@ -14,8 +14,11 @@ test integration rather than the entire existing execution branch.
 - Retains the execution branch's already corrected cache-interface tests.
 - Ports manual initialization coverage to the claimed-command interface and
   verifies risk rejection before submission. Checks automated entries remain off.
-- Preserves the legacy ExecutionOMS full-validation bypass as one strict xfail.
-  This is an unresolved release blocker, not a passing safety guarantee.
+- Retires the legacy ExecutionOMS direct-submit path: its constructor creates no
+  broker client and execute_signal raises LegacyExecutionDisabledError before
+  accessing a broker or sending an alert. Existing callers must migrate explicitly;
+  there is no environment flag to re-enable it and no automatic order forwarding.
+  Seven regression cases replace the old strict expected failure.
 - Stops stats_analyzer from fetching data at import; explicit CLI execution
   retains the diagnostic. A regression test prohibits import-time data loading.
 - Keeps the data fixture safely inside its requested time window.
@@ -26,16 +29,16 @@ test integration rather than the entire existing execution branch.
 
 ## Local verification
 
-Python 3.12: 264 passed, 1 strict expected failure, 3 pandas deprecation warnings.
-Local dependency versions differ from repository pins; CI installs requirements.txt.
-Five edited Python files parsed successfully. No application strategy or order
-runtime source changes relative to the execution-safety base, except the separate
-stats_analyzer diagnostic import fix. No migrations applied to production.
+The initial integration revision passed 264 tests with one strict expected failure.
+The follow-up retires that bypass and replaces its xfail with seven rejection tests.
+Follow-up local Python 3.12 result: 271 passed, zero expected failures, four
+deprecation warnings. See the PR for exact-commit CI results. Local tests block
+network and dotenv access before collection. AST comparison confirms all code in
+quant_engine.py outside the retired OMS classes is unchanged by the follow-up.
+No migrations were applied to production.
 
 ## Remaining gates
 
-- Repair or retire the alternate ExecutionOMS entry path and turn its strict
-  expected failure into a passing test before any release approval.
 - GCP deployed revision, full bb_window traceback and polling remain unverified.
 - November 4 broker history and P&L reconciliation remain unverified.
 - Draft fencing SQL is not wired into the Python worker; SQL tests do not prove

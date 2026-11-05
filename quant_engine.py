@@ -399,13 +399,23 @@ class FrictionBacktester:
         strategy = SMACrossover(fast_window, slow_window)
         return self.run(df, strategy)
 
-# 6. Order Management & Webhook Execution Engine
+# 6. Retired legacy order entry point
+class LegacyExecutionDisabledError(RuntimeError):
+    """Direct OMS submission is retired; no broker action was attempted."""
+
+
 class ExecutionOMS:
+    """Compatibility shell that cannot submit orders.
+
+    The old path bypassed command claims, audit and full portfolio validation.
+    Callers must migrate explicitly to the reviewed command workflow; this class
+    does not enqueue or forward orders and cannot be enabled by environment flags.
+    """
     def __init__(self, config: Optional[QuantConfig] = None):
         self.config = config or QuantConfig()
-        self.trading_client = TradingClient(
-            self.config.api_key, self.config.secret_key, paper=True
-        )
+        # Keep the attribute for callers inspecting state, without constructing
+        # an authenticated client for a retired execution path.
+        self.trading_client = None
 
     def send_discord_alert(self, title: str, fields: list, is_buy: bool = True) -> None:
         if not self.config.discord_webhook:
@@ -429,43 +439,11 @@ class ExecutionOMS:
     def execute_signal(
         self, symbol: str, entry_price: float, stop_loss: float, side: OrderSide
     ) -> Optional[str]:
-        account = self.trading_client.get_account()
-        if account.trading_blocked:
-            logging.error("Account trading blocked by broker.")
-            return None
-
-        equity = float(account.equity)
-        last_equity = float(account.last_equity)
-        risk_engine = RiskEngine(account_equity=equity, config=self.config)
-
-        if not risk_engine.check_daily_circuit_breaker(last_equity):
-            return None
-
-        qty = risk_engine.size_position(entry_price, stop_loss)
-        if qty <= 0:
-            logging.info(f"[{symbol}] Risk engine sized 0 shares. Order aborted.")
-            return None
-
-        order_req = MarketOrderRequest(
-            symbol=symbol, qty=qty, side=side, time_in_force=TimeInForce.DAY
+        """Reject direct submission without account reads, orders or alerts."""
+        raise LegacyExecutionDisabledError(
+            "ExecutionOMS.execute_signal is retired. No order was submitted. "
+            "Use the reviewed claimed-command workflow after its release gates pass."
         )
-        order = self.trading_client.submit_order(order_req)
-        logging.info(
-            f"ORDER SUBMITTED | {side.value} {qty} {symbol} @ ~${entry_price:.2f} | ID: {order.id}"
-        )
-
-        self.send_discord_alert(
-            title=f"🚨 ORDER EXECUTED: {symbol}",
-            is_buy=(side == OrderSide.BUY),
-            fields=[
-                {"name": "Action", "value": side.value.upper(), "inline": True},
-                {"name": "Shares", "value": str(qty), "inline": True},
-                {"name": "Est. Price", "value": f"${entry_price:.2f}", "inline": True},
-                {"name": "Stop Loss", "value": f"${stop_loss:.2f}", "inline": True},
-                {"name": "Order ID", "value": f"`{order.id}`", "inline": False},
-            ],
-        )
-        return str(order.id)
 
 
 def run_diagnostics(ticker: str = "SPY", days: int = 365) -> None:
