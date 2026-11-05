@@ -15,14 +15,6 @@ from data_fetcher import get_historical_bars
 from statsmodels.tsa.stattools import adfuller
 import numpy as np
 
-# Load data directly from cache
-df = get_historical_bars(symbol="SPY", days=180)
-close_prices = df["close"].dropna().values
-
-# Run stationarity check
-adf_res = adfuller(close_prices)
-print(f"ADF Statistic: {adf_res[0]:.4f}, p-value: {adf_res[1]:.4f}")
-
 env_path = Path('C:/Users/HP/trading-sandbox/.env')
 load_dotenv(dotenv_path=env_path)
 # Load keys
@@ -45,6 +37,15 @@ def get_hurst_exponent(time_series, max_lag=20):
     return reg[0]
 
 def main():
+    # Load data directly from cache
+    df = get_historical_bars(symbol="SPY", days=180)
+    close_prices = df["close"].dropna().values
+    
+    # Run stationarity check
+    adf_res = adfuller(close_prices)
+    print(f"ADF Statistic: {adf_res[0]:.4f}, p-value: {adf_res[1]:.4f}")
+    
+
     # 1. Initialize Client
     data_client = StockHistoricalDataClient(API_KEY, SECRET_KEY)
 
