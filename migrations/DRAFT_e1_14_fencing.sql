@@ -14,7 +14,7 @@ ALTER TABLE public.commands
 CREATE OR REPLACE FUNCTION public.e114_claim_next_trade_command(p_claim_token uuid)
 RETURNS SETOF public.commands
 LANGUAGE plpgsql SECURITY INVOKER SET search_path = ''
-AS $
+AS $$
 BEGIN
  IF p_claim_token IS NULL THEN RAISE EXCEPTION 'Claim token required'; END IF;
  IF NOT pg_catalog.pg_try_advisory_xact_lock(31031, 1) THEN RETURN; END IF;
@@ -35,7 +35,7 @@ BEGIN
      client_order_id=COALESCE(c.client_order_id,'e1-'||c.id::text)
  FROM next_command WHERE c.id=next_command.id RETURNING c.*;
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.e114_claim_next_trade_command(uuid)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.e114_claim_next_trade_command(uuid)
