@@ -1,6 +1,6 @@
 """Offline evidence audit. No network, broker client, or trading authorization."""
 import argparse
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
@@ -21,7 +21,60 @@ def number(value):
         raise ValueError('invalid number') from None
 
 
-def audit(snapshot):
+def timestamp(value):
+    if not isinstance(value, str):
+        raise ValueError('invalid timestamp')
+    result = datetime.fromisoformat(value.replace('Z', '+00:00'))
+    if result.tzinfo is None:
+        raise ValueError('timezone required')
+    return result
+
+
+def validate_payload(name, value, day):
+    if name in ('positions', 'open_orders', 'submitted_orders', 'activity_linked_orders'):
+        if not isinstance(value, list):
+            raise ValueError('expected records')
+        seen = set()
+        for row in value:
+            if not isinstance(row, dict):
+                raise ValueError('expected object')
+            key = row.get('symbol' if name == 'positions' else 'id')
+            if not isinstance(key, str) or not key or key in seen:
+                raise ValueError('invalid identity')
+            seen.add(key)
+            if name == 'positions':
+                number(row['qty'])
+            else:
+                if not isinstance(row.get('symbol'), str) or not row['symbol'] or row.get('side') not in ('buy', 'sell'):
+                    raise ValueError('invalid order')
+                if number(row['filled_qty']) < 0:
+                    raise ValueError('negative filled quantity')
+    if name == 'portfolio_history':
+        if not isinstance(value, dict):
+            raise ValueError('expected history')
+        times, equity = value.get('timestamp'), value.get('equity')
+        if not isinstance(times, list) or not times or not isinstance(equity, list) or len(times) != len(equity):
+            raise ValueError('invalid history arrays')
+        previous = None
+        for ts, eq in zip(times, equity):
+            if isinstance(ts, bool) or not isinstance(ts, (int, float)):
+                raise ValueError('invalid epoch')
+            number(ts)
+            instant = datetime.fromtimestamp(ts, timezone.utc)
+            if previous is not None and ts <= previous:
+                raise ValueError('history chronology')
+            if instant.astimezone(ZoneInfo('America/New_York')).date() != day:
+                raise ValueError('history outside requested date')
+            previous = ts
+            number(eq)
+
+
+def audit(snapshot, *, now=None, max_age_seconds=900):
+    if isinstance(max_age_seconds, bool) or not isinstance(max_age_seconds, int) or max_age_seconds <= 0:
+        raise ValueError('max age must be a positive integer')
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        raise ValueError('audit time must be timezone-aware')
     issues = []
     result = {'schema_version': 1, 'reconciled': False, 'execution_authorized': False,
               'realized_pnl': None, 'unrealized_pnl': None, 'issues': issues,
@@ -41,6 +94,19 @@ def audit(snapshot):
         day = None
         issues.append('invalid_requested_date')
     result['requested_date'] = str(day) if day else None
+    began = ended = None
+    try:
+        began = timestamp(snapshot['collection_started_at'])
+        ended = timestamp(snapshot['collection_finished_at'])
+        if began > ended or ended > now:
+            raise ValueError('invalid collection chronology')
+        result['snapshot_age_seconds'] = (now - ended).total_seconds()
+        result['collection_duration_seconds'] = (ended - began).total_seconds()
+        if (now - began).total_seconds() > max_age_seconds:
+            issues.append('stale_snapshot')
+    except (KeyError, TypeError, ValueError):
+        issues.append('invalid_collection_timestamps')
+    result['max_age_seconds'] = max_age_seconds
     sections = snapshot.get('sections')
     if not isinstance(sections, dict):
         sections = {}
@@ -49,6 +115,18 @@ def audit(snapshot):
         section = sections.get(name)
         if not isinstance(section, dict) or section.get('status') != 'ok' or 'data' not in section:
             issues.append('missing_or_failed_section:' + name)
+            continue
+        try:
+            section_start = timestamp(section['started_at'])
+            section_end = timestamp(section['finished_at'])
+            if began is None or ended is None or not began <= section_start <= section_end <= ended:
+                raise ValueError('section outside collection')
+        except (KeyError, TypeError, ValueError):
+            issues.append('invalid_section_timestamps:' + name)
+        try:
+            validate_payload(name, section['data'], day)
+        except (ValueError, KeyError, TypeError, OverflowError, OSError):
+            issues.append('invalid_section_payload:' + name)
             continue
         data[name] = section['data']
         if name in ('open_orders', 'submitted_orders', 'activities') and section.get('api_page_exhausted') is not True:
@@ -93,8 +171,8 @@ def audit(snapshot):
                 if kind != 'FILL':
                     non_fill_types.add(kind)
                     continue
-                timestamp = datetime.fromisoformat(record['transaction_time'].replace('Z', '+00:00'))
-                if timestamp.tzinfo is None or timestamp.astimezone(ZoneInfo('America/New_York')).date() != day:
+                fill_time = timestamp(record['transaction_time'])
+                if fill_time.tzinfo is None or fill_time.astimezone(ZoneInfo('America/New_York')).date() != day:
                     raise ValueError('fill_outside_requested_day')
                 symbol, side, oid = record['symbol'], record['side'], record['order_id']
                 if not isinstance(symbol, str) or not symbol or side not in ('buy', 'sell') or not isinstance(oid, str):
@@ -133,10 +211,11 @@ def audit(snapshot):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('snapshot', type=Path)
+    parser.add_argument('--max-age-seconds', type=int, default=900)
     args = parser.parse_args()
     try:
         raw = args.snapshot.read_bytes()
-        result = audit(json.loads(raw))
+        result = audit(json.loads(raw), max_age_seconds=args.max_age_seconds)
         result['source_sha256'] = hashlib.sha256(raw).hexdigest()
     except (OSError, ValueError):
         parser.exit(2, 'Cannot read valid snapshot JSON.\n')

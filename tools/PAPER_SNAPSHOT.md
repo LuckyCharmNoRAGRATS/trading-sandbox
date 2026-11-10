@@ -42,6 +42,14 @@ python tools/audit_paper_snapshot.py /tmp/quant-paper-2026-11-04.json
 
 This command performs no network calls. It prints JSON with a SHA-256 of the input, section-coverage issues, account identity/equity drift, and per-symbol fill quantities and trade cash flow excluding fees. It checks unique activity IDs, timezone-aware fill dates in New York, linked-order symbol/side, and daily fill quantities against lifetime order filled quantities. A day's fills may legitimately be less than lifetime filled quantity.
 
-Exit 0 means only the implemented evidence checks passed, not that all broker fields have been independently validated or accounting reconciled. Exit 2 means one or more checks failed or the input could not be read. Non-fill activity types require separate cash-movement review. Missing coverage or malformed fills must not be interpreted as zero trades or zero profit. Realized and unrealized P&L remain null, and execution authorization remains false. Timestamp freshness, historical inventory reconstruction, fees, and lot-level cost basis reconciliation remain future work.
+Exit 0 means only the implemented evidence checks passed, not that all broker fields have been independently validated or accounting reconciled. Exit 2 means one or more checks failed or the input could not be read. Non-fill activity types require separate cash-movement review. Missing coverage or malformed fills must not be interpreted as zero trades or zero profit. Realized and unrealized P&L remain null, and execution authorization remains false. Historical inventory reconstruction, fees, and lot-level cost basis reconciliation remain future work.
 
 Validation: 26 collector/auditor offline tests passed locally. Dedicated GitHub Actions workflow added; its remote result is separate from local results.
+
+## Freshness and payload validation
+
+The auditor validates position/order record identities and quantities, history array lengths, finite equity, chronological history points and New York reporting dates. Collection and section timestamps must be timezone-aware, ordered and contained within the collection interval. Future collection times are rejected. These checks cover fields used by this audit, not every field in the broker schema.
+
+The default maximum evidence age is 900 seconds, measured from collection start to audit time. This is an explicit reporting policy, not a broker guarantee. Historical activity dates may be old while the export itself is fresh. For deliberate archival analysis, set a suitable positive `--max-age-seconds` value; the selected threshold appears in the result. This never authorizes trading or establishes historical balances.
+
+Validation after this extension: 32 offline tests passed locally.

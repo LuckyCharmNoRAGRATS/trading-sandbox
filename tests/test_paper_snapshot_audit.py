@@ -9,12 +9,14 @@ spec.loader.exec_module(a)
 
 
 def fixture():
-    sections = {name: {'status': 'ok', 'data': [], 'api_page_exhausted': True} for name in a.REQUIRED}
+    stamp = a.datetime.now(a.timezone.utc).isoformat()
+    sections = {name: {'status': 'ok', 'data': [], 'api_page_exhausted': True, 'started_at': stamp, 'finished_at': stamp} for name in a.REQUIRED}
     for name in ('account_before', 'account_after'):
         sections[name]['data'] = {'id': 'account', 'equity': '100'}
     sections['activities']['data'] = [{'id': 'fill1', 'activity_type': 'FILL', 'transaction_time': '2026-11-04T15:00:00Z', 'symbol': 'SPY', 'side': 'buy', 'order_id': 'order1', 'qty': '0.1', 'price': '123.45'}]
     sections['activity_linked_orders']['data'] = [{'id': 'order1', 'symbol': 'SPY', 'side': 'buy', 'filled_qty': '0.1'}]
-    return {'schema_version': 1, 'environment': 'paper', 'read_only': True, 'requested_date': '2026-11-04', 'sections': sections}
+    sections['portfolio_history']['data'] = {'timestamp': [a.datetime(2026, 11, 4, 21, tzinfo=a.timezone.utc).timestamp()], 'equity': [100]}
+    return {'collection_started_at': stamp, 'collection_finished_at': stamp, 'schema_version': 1, 'environment': 'paper', 'read_only': True, 'requested_date': '2026-11-04', 'sections': sections}
 
 
 class AuditTests(unittest.TestCase):
@@ -64,6 +66,35 @@ class AuditTests(unittest.TestCase):
         for value in ('NaN', 'Infinity', True, '-1'):
             s = fixture(); s['sections']['activities']['data'][0]['qty'] = value
             self.assertIsNone(a.audit(s)['fill_summary'])
+
+    def test_malformed_section_payloads(self):
+        for name in ('positions', 'open_orders', 'submitted_orders', 'portfolio_history'):
+            s = fixture(); s['sections'][name]['data'] = None
+            self.assertIn('invalid_section_payload:' + name, a.audit(s)['issues'])
+
+    def test_stale_snapshot(self):
+        s = fixture()
+        now = a.timestamp(s['collection_finished_at']) + __import__('datetime').timedelta(seconds=901)
+        self.assertIn('stale_snapshot', a.audit(s, now=now)['issues'])
+
+    def test_future_and_naive_collection(self):
+        for stamp in ('2099-01-01T00:00:00Z', '2026-11-10T12:00:00'):
+            s = fixture(); s['collection_finished_at'] = stamp
+            self.assertIn('invalid_collection_timestamps', a.audit(s)['issues'])
+
+    def test_section_outside_collection(self):
+        s = fixture(); s['sections']['positions']['finished_at'] = '2099-01-01T00:00:00Z'
+        self.assertIn('invalid_section_timestamps:positions', a.audit(s)['issues'])
+
+    def test_history_wrong_day_and_nonfinite(self):
+        for history in ({'timestamp': [0], 'equity': [100]}, {'timestamp': [1793826000], 'equity': ['NaN']}):
+            s = fixture(); s['sections']['portfolio_history']['data'] = history
+            self.assertIn('invalid_section_payload:portfolio_history', a.audit(s)['issues'])
+
+    def test_invalid_freshness_threshold(self):
+        for value in (0, -1, True):
+            with self.assertRaises(ValueError):
+                a.audit(fixture(), max_age_seconds=value)
 
     def test_non_object(self):
         self.assertFalse(a.audit([])['evidence_checks_passed'])
