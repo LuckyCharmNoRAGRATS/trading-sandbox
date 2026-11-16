@@ -53,3 +53,9 @@ The auditor validates position/order record identities and quantities, history a
 The default maximum evidence age is 900 seconds, measured from collection start to audit time. This is an explicit reporting policy, not a broker guarantee. Historical activity dates may be old while the export itself is fresh. For deliberate archival analysis, set a suitable positive `--max-age-seconds` value; the selected threshold appears in the result. This never authorizes trading or establishes historical balances.
 
 Validation after this extension: 32 offline tests passed locally.
+
+## Pipeline verification — 2026-11-17
+
+The combined 37-test suite passed in GitHub Actions at commit e904c87422139c1d88e9227c0ea91bf811f9be48 (run 43979363704). Five added tests exercise collector-to-file-to-auditor CLI behavior with synthetic broker responses: partial fills and decimal cash flow, input SHA-256 and unchanged evidence, failed history collection, capped order pages, stale exports, and invalid JSON handling. No broker credentials or account data were used. Local execution was unavailable for this extension; the passing result is from GitHub Actions.
+
+CI evidence: https://github.com/LuckyCharmNoRAGRATS/trading-sandbox/actions/runs/43979363704
