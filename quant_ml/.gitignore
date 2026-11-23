@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+*.joblib
+*.pkl
+research_*.json
