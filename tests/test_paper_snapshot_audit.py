@@ -96,6 +96,22 @@ class AuditTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 a.audit(fixture(), max_age_seconds=value)
 
+    def test_duplicate_json_keys_rejected_at_all_depths(self):
+        for raw in ('{"environment":"live","environment":"paper"}',
+                    '{"sections":{"activities":{"status":"error","status":"ok"}}}'):
+            with self.assertRaises(ValueError):
+                a.load_snapshot(raw)
+
+    def test_nonstandard_json_constants_rejected(self):
+        for literal in ('NaN', 'Infinity', '-Infinity'):
+            with self.assertRaises(ValueError):
+                a.load_snapshot('{"unused":' + literal + '}')
+
+    def test_strict_loader_preserves_valid_evidence(self):
+        import json
+        original = fixture()
+        self.assertEqual(a.load_snapshot(json.dumps(original)), original)
+
     def test_non_object(self):
         self.assertFalse(a.audit([])['evidence_checks_passed'])
 
