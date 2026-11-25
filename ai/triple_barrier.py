@@ -31,27 +31,22 @@ class TripleBarrierLabeler:
             entry_price = float(data.iloc[start_loc]['close'])
             direction = int(data.iloc[start_loc][signal_col])
             
-            # Define dynamic barriers based on entry price
-            if direction == 1:  # Long Position
-                upper = entry_price * (1 + self.pt)
-                lower = entry_price * (1 - self.sl)
-            else:               # Short Position
-                upper = entry_price * (1 - self.sl)
-                lower = entry_price * (1 + self.pt)
-                
+            profit_price = entry_price * (1 + direction * self.pt)
+            stop_price = entry_price * (1 - direction * self.sl)
+
             # Define Vertical Time Barrier
             end_loc = min(start_loc + self.max_hold, len(data) - 1)
             path = data.iloc[start_loc + 1 : end_loc + 1]['close']
             
-            # Default to time expiration
-            label = 0 
+            # Only a fully observed holding period can expire.
+            label = 0 if end_loc == start_loc + self.max_hold else np.nan 
             
             # Scan the price path for barrier collisions
             for current_price in path:
-                if (direction == 1 and current_price >= upper) or (direction == -1 and current_price <= upper):
+                if direction * (current_price - profit_price) >= 0:
                     label = 1
                     break
-                elif (direction == 1 and current_price <= lower) or (direction == -1 and current_price >= lower):
+                elif direction * (current_price - stop_price) <= 0:
                     label = -1
                     break
                     
