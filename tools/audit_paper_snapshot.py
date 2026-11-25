@@ -208,6 +208,23 @@ def audit(snapshot, *, now=None, max_age_seconds=900):
     return result
 
 
+def load_snapshot(raw):
+    """Reject ambiguous duplicate keys and non-standard JSON numeric constants."""
+    def unique_object(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError('duplicate JSON key')
+            result[key] = value
+        return result
+
+    def invalid_constant(value):
+        raise ValueError('non-standard JSON constant')
+
+    return json.loads(raw, object_pairs_hook=unique_object,
+                      parse_constant=invalid_constant)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('snapshot', type=Path)
@@ -215,7 +232,7 @@ def main():
     args = parser.parse_args()
     try:
         raw = args.snapshot.read_bytes()
-        result = audit(json.loads(raw), max_age_seconds=args.max_age_seconds)
+        result = audit(load_snapshot(raw), max_age_seconds=args.max_age_seconds)
         result['source_sha256'] = hashlib.sha256(raw).hexdigest()
     except (OSError, ValueError):
         parser.exit(2, 'Cannot read valid snapshot JSON.\n')
