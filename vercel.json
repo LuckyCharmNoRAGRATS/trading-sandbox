@@ -10,7 +10,8 @@
   "git": {
     "deploymentEnabled": {
       "fix/e1-safe-execution": false,
-      "integration/e1-test-baseline": false
+      "integration/e1-test-baseline": false,
+      "work/read-only-broker-collector": false
     }
   }
 }
