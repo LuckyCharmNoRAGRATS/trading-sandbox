@@ -95,6 +95,7 @@ class LiveExecutionEngine:
         while True:
             try:
                 state = self.sync_portfolio_state()
+                risk_engine = RiskEngine(account_equity=state["equity"], config=self.config)
                 # 0. Process Web Dashboard Manual Orders
                 if DASHBOARD_SYNC and dash.bridge.client:
                     pending_cmds = dash.bridge.get_pending_commands()
@@ -122,7 +123,6 @@ class LiveExecutionEngine:
                                 dash.bridge.mark_command_processed(cmd["id"], status="failed", message="Risk Engine rejected the manual order.")
                                 logging.warning(f"[{sym}] MANUAL WEB ORDER REJECTED by RiskEngine.")
                                 
-                risk_engine = RiskEngine(account_equity=state["equity"], config=self.config)
 
                 for symbol in self.watchlist:
                     signal = self.generate_live_signals(symbol)
