@@ -95,6 +95,7 @@ class LiveExecutionEngine:
         while True:
             try:
                 state = self.sync_portfolio_state()
+                risk_engine = RiskEngine(account_equity=state["equity"], config=self.config)
                 # 0. Process Web Dashboard Manual Orders
                 if DASHBOARD_SYNC and dash.bridge.client:
                     pending_cmds = dash.bridge.get_pending_commands()
@@ -115,14 +116,15 @@ class LiveExecutionEngine:
                             
                             if approved_shares > 0:
                                 order = MarketOrderRequest(symbol=sym, qty=approved_shares, side=side, time_in_force=TimeInForce.DAY)
-                                self.trading_client.submit_order(order)
-                                dash.bridge.mark_command_processed(cmd["id"], status="completed", message=f"Order routed for {approved_shares} shares.")
+                                submitted = self.trading_client.submit_order(order)
+                                state["pending_symbols"].append(sym)
+                                state["portfolio_exposure"] += approved_shares * entry
+                                dash.bridge.mark_command_processed(cmd["id"], status="completed", message=f"Order {submitted.id} submitted for {approved_shares} shares.")
                                 logging.info(f"[{sym}] MANUAL WEB ORDER APPROVED: {approved_shares} shares.")
                             else:
                                 dash.bridge.mark_command_processed(cmd["id"], status="failed", message="Risk Engine rejected the manual order.")
                                 logging.warning(f"[{sym}] MANUAL WEB ORDER REJECTED by RiskEngine.")
                                 
-                risk_engine = RiskEngine(account_equity=state["equity"], config=self.config)
 
                 for symbol in self.watchlist:
                     signal = self.generate_live_signals(symbol)
@@ -164,8 +166,10 @@ class LiveExecutionEngine:
                             order = MarketOrderRequest(
                                 symbol=symbol, qty=shares, side=side, time_in_force=TimeInForce.DAY
                             )
-                            self.trading_client.submit_order(order)
-                            logging.info(f"[{symbol}] ORDER EXECUTED: {side.value} {shares} shares @ ~${signal['price']:.2f}")
+                            submitted = self.trading_client.submit_order(order)
+                            state["pending_symbols"].append(symbol)
+                            state["portfolio_exposure"] += shares * signal["price"]
+                            logging.info(f"[{symbol}] ORDER SUBMITTED: {side.value} {shares} shares | ID: {submitted.id}")
 
             except Exception as e:
                 logging.error(f"Execution loop exception: {e}")
